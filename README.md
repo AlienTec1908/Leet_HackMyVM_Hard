@@ -10,7 +10,7 @@
 *   **VM Link:** [https://hackmyvm.eu/machines/machine.php?vm=Leet](https://hackmyvm.eu/machines/machine.php?vm=Leet)
 *   **Autor:** DarkSpirit
 
-![Leet Machine Icon](Leet.png)
+![Leet Machine Icon](leet.png)
 
 ---
 
